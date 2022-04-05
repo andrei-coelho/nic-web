@@ -1,0 +1,7 @@
+# %YAML 1.2
+---
+  
+type: dev
+prod_url: 
+dev_url: http://localhost:3000/
+salt: my_salt

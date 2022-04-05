@@ -1,0 +1,11 @@
+# banco de dados
+database:
+
+  default:
+    driver: mysql
+    host: localhost
+    dbname: my_db
+    user: root@mariadb
+    pass: 
+    charset: utf8mb4
+    port: 
