@@ -18,5 +18,6 @@ include "../api/helpers/user.php";
 include "../api/helpers/session.php";
 
 if(!_is_in_production() && $request->vars['req'] == 'test') include "../src/test.php";
+if(!_is_in_production() && $request->vars['req'] == 'dev') include "../src/devtool.php";
 
 include "../src/api.php";
