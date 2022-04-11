@@ -5,15 +5,18 @@ namespace src;
 class Request {
 
     public $vars;
+    private static $url_parts;
     private static $raw;
 
     public function __construct(array $elements){
-        
-        $request = isset($_GET['request']) ? $_GET['request'] : 'home';
-        $request = explode('/', trim($request));
+   
+        if(!self::$url_parts){
+            $request = isset($_GET['request']) ? $_GET['request'] : 'home';
+            self::$url_parts = explode('/', trim($request));
+        }
 
         foreach ($elements as $k => $el) {
-            $this->vars[$el] = isset($request[$k]) && trim($request[$k]) != "" ? $request[$k] : false;
+            $this->vars[$el] = isset(self::$url_parts[$k]) && trim(self::$url_parts[$k]) != "" ? self::$url_parts[$k] : false;
         }
 
     }
