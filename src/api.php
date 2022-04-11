@@ -3,50 +3,37 @@
 header("Access-Control-Allow-Origin: *");
 header('Content-Type: application/json; charset=utf-8');
 
-use libs\app\Config as Config;
-use libs\app\Route as Route;
-use libs\app\User as user;
+use src\Request as request;
+use libs\app\Route as route;
+use libs\app\ResponseFactory as ResponseFactory;
 
-
-if(!$request->vars['route'] || !$request->vars['func']) _error(400, 'Bad Request A');
-
-
-/**
- * Inclui o arquivo pela rota
- */
-include "../api/routes.php";
-$file = Route::get_file($request->vars['route']);
-if(!$file || !file_exists($file)) _error(404, 'Not Found - A');
-include $file; // arquivo incluido aqui
-
-
-/**
- * Se não for uma requisição pública é necessário gerar um usuário
- * e verificar se ele tem as credenciais necessárias
- */
-if(!_is_public()){
+(function(){
     
-    if((!$request->vars['session'] || $request->vars['session'] == 'null') && !$request->vars['secret'])
-        _error(401, 'Unauthorized - A'); 
+    include "../api/helpers/response.php";
+    include "../api/routes.php";
+
+    $request = new request(['req', 'service', 'func']);
     
-    $user = $request->vars['secret'] ? 
-    user::generate_by_secret($request->vars['secret']) :
-    user::generate_by_session($request->vars['session']) ;
+    if(!$request->vars['service'] || !$request->vars['func']) 
+        _error(400, 'Bad Request');
+
+    include "../api/helpers/user.php";
+    $user = _user();
+
+    if($user && !$user->isValidSession()) 
+        _error(440, 'Session Expired');
+
+    if(!$user && !route::is_public($request->vars['service'], $request->vars['func']))
+        _error(401, 'Unauthorized');
+
+    if(!($file = route::get_file($request->vars['service'])))
+        _error(404, 'Not Found');
     
-    if(!$user || !_is_authentic()) _error(401, 'Unauthorized - B');
+    include $file;
+    echo (ResponseFactory::genResponseByFunc($request->vars['func']))->response();
+    
+})();
 
-}
-
-
-/**
- * Se a função não estiver definida irá gerar um erro 404
- */
-$func = $request->vars['func'];
-if($func[0] == "_") $func = substr($func, 1, strlen($func) - 1);
-if(!function_exists($func)) _error(404, 'Not Found - B'); 
+exit;
 
 
-/**
- * Mostra a resposta em JSON
- */
-echo (ResponseFactory::genResponseByFunc($func))->response();

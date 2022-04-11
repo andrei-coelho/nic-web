@@ -4,8 +4,8 @@ use libs\app\Route as Route;
 
 # Route::register('exe', 'example');
 
-Route::register('me', 'me');
+Route::register('users', 'users');
 Route::register('auth', 'auth');
-Route::register('clientes', 'clienteMananger');
-Route::register('userCliente', 'userClienteMananger');
+Route::register('tasks', 'tasks');
+Route::register('files', 'files');
 

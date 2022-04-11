@@ -26,7 +26,7 @@ class Request {
         return self::$raw;
     }
 
-    private static function clean_value($value, $type = 'mixed'){
+    public static function clean_value($value, $type = 'mixed'){
         
         if($type == 'array'){
             if(!is_array($value)) return [self::clean_value($value)];

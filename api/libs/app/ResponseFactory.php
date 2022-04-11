@@ -9,7 +9,7 @@ class ResponseFactory {
 
     public static function genResponseByFunc($func){
         
-        $refFunction = new ReflectionFunction($func);
+        $refFunction = new \ReflectionFunction($func);
         $parameters = $refFunction->getParameters();
         $vars = request::raw();
 

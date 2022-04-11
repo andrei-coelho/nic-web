@@ -2,8 +2,8 @@
 
 // $passEnc = password_hash($pass, PASSWORD_DEFAULT);
 
-function _is_public(){
-    return true;    
+function logar(){
+
 }
 
 function login($pass, $email){

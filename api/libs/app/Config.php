@@ -40,7 +40,7 @@ class Config {
 
     public static function is_in_production(){
 
-        return self::instance()->data['production'];
+        return self::instance()->data['type'] == 'prod';
     }
 
 
