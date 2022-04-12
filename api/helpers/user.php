@@ -10,15 +10,14 @@ function _user(){
     
     $request = new request(['req', 'route', 'func', 'session']);
     
+    if(!$request->vars['session']) return false;
+
     return 
            ($user = UserFactory::get_user())
         ?  $user 
-        : ($request->vars['session'] 
-            ? UserFactory::generate_by_session(
-                $request->vars['session'], 
-                $request->vars['route'], 
-                $request->vars['func']
-            ) 
-            : false
+        : UserFactory::generate_by_session(
+            $request->vars['session'], 
+            $request->vars['route'], 
+            $request->vars['func']
         );
 }

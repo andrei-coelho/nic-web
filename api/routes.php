@@ -2,10 +2,8 @@
 
 use libs\app\Route as Route;
 
-# Route::register('exe', 'example');
+Route::register('@testederota', 'test');
 
-Route::register('users', 'users');
-Route::register('auth', 'auth');
-Route::register('tasks', 'tasks');
-Route::register('files', 'files');
-
+#!
+Route::register('@auth', 'auth');
+Route::register('client@clients', 'client/clients');

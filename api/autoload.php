@@ -9,6 +9,6 @@ spl_autoload_register(function($class) {
         return;
     } 
 
-    throw new Exception("O arquivo $file não existe ou a Classe $class já foi carregada", 1);
+    throw new Exception("O arquivo $file não existe", 1);
 
 });

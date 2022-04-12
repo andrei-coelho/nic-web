@@ -26,10 +26,11 @@ use libs\app\ResponseFactory as ResponseFactory;
     if(!$user && !route::is_public($request->vars['service'], $request->vars['func']))
         _error(401, 'Unauthorized');
 
-    if(!($file = route::get_file($request->vars['service'])))
+    if(!($file = route::get_file($request->vars['service'])) 
+    || !(include $file)
+    || !function_exists($request->vars['func']))
         _error(404, 'Not Found');
     
-    include $file;
     echo (ResponseFactory::genResponseByFunc($request->vars['func']))->response();
     
 })();
