@@ -13,3 +13,7 @@ function _url(){
 function _salt(){
     return config::get("salt");
 }
+
+function _token(){
+    return !_is_in_production() ? config::get("tk_dropbox") : "";
+}

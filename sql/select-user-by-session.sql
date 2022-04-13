@@ -32,7 +32,7 @@ FROM user
 WHERE 
 	(( user.admin = 1)
     OR (service.slug = 'tasks' AND service_function.slug = 'upload_file' AND NOT service_function.slug = 'logar'))
-    AND session.hash = 'session-andrei2' AND session.ativo = 1;
+    AND session.hash = 'session-augusto' AND session.ativo = 1;
     
      
 	

@@ -34,11 +34,9 @@ class FileService {
         
         $poolsValue = [];
 
-        foreach ($this->functions as $fun) {
-            foreach ($fun['pool'] as $pool) {
+        foreach ($this->functions as $fun) 
+            foreach ($fun['pool'] as $pool) 
                 $poolsValue[$pool] = 0;
-            }
-        }
 
         $slugs = "";
         foreach ($poolsValue as $slug => $id) 
@@ -48,14 +46,12 @@ class FileService {
         $perm_q = _query("SELECT slug, id FROM permission_pool WHERE $slugs");
         $ids_pr = $perm_q->fetchAllAssoc();
         
-        foreach ($ids_pr as $id_pr) {
-            $poolsValue[$id_pr['slug']] = $id_pr['id'];
-        }
-        
-        print_r($poolsValue);
+        foreach ($ids_pr as $id_pr) $poolsValue[$id_pr['slug']] = $id_pr['id'];
 
         $idService  = _exec("INSERT INTO service (slug, route, ativo) VALUES ('".$this->slug."', '".$this->path."', 1)", true);
         
+        $slugsFun = [];
+
         foreach ($this->functions as $fun) {
             $slugFun = $fun['slug'];
             $funcId  = _exec("INSERT INTO service_function (slug, service_id) VALUES('$slugFun', $idService)", true);
@@ -63,7 +59,15 @@ class FileService {
                 $idPool = $poolsValue[$pool_slug];
                 _exec("INSERT INTO permission_func (permission_pool_id, service_function_id ) VALUES ($idPool, $funcId)");
             }
+            $slugsFun[] = [
+                'name' => $slugFun,
+                'pools' => implode(',',$fun['pool'])
+            ];
         }
+        echo "Service: ".$this->slug. " commited <br> \n";
+        echo "- Functions: <br> \n <pre>";
+        print_r($slugsFun);
+        echo "\n </pre>";
    }
 
 }
