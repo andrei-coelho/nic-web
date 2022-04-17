@@ -29,6 +29,7 @@ class UserClient extends User {
             $this->email   = $email;
             $this->session = $session;
             $this->valid   = $valid_session;
+            $this->expire  = $session_expire;
             # variaveis do cliente
             $this->client_nome  = $client_nome;
             $this->user_master  = $user_master;
@@ -38,9 +39,7 @@ class UserClient extends User {
     public function getClientArray(){
         return [
             "client_nome"  => $this->client_nome,
-            "user_master"  => $this->user_master,
-            "client_ativo" => $this->client_ativo,
-            "client_slug"  => $this->client_slug,
+            "client_slug"  => $this->client_slug
         ];
     }
 }

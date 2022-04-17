@@ -8,9 +8,8 @@ function _error($code = 404, $message = "Not Found"){
     die();
 }
 
-function _response(array $data = [], $session = false){
-    $response = new Response($data);
-    if($session) $response->setSession($session);
+function _response(array $data = [], $message = ''){
+    $response = new Response($data, 200, $message);
     if(_user()) $response->setSession(_user()->session());
     return $response;
 }

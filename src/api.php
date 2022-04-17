@@ -3,7 +3,6 @@
 header("Access-Control-Allow-Origin: *");
 header('Content-Type: application/json; charset=utf-8');
 
-use src\Request as request;
 use libs\app\Route as route;
 use libs\app\ResponseFactory as ResponseFactory;
 
@@ -12,7 +11,7 @@ use libs\app\ResponseFactory as ResponseFactory;
     include "../api/helpers/response.php";
     include "../api/routes.php";
 
-    $request = new request(['req', 'service', 'func']);
+    $request = _request(['req', 'service', 'func']);
     
     if(!$request->vars['service'] || !$request->vars['func']) 
         _error(400, 'Bad Request');

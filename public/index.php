@@ -1,11 +1,10 @@
 <?php 
 
-include "../src/Request.php";
-$request = new src\Request(['req']);
-
+include "../api/helpers/request.php";
 include "../api/autoload.php";
 include "../api/helpers/config.php";
 
+$request = _request(['req']);
 $req = $request->vars['req'] ? $request->vars['req'] : "home";
 
 if(!_is_in_production() && $req != 'api'

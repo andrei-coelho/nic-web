@@ -5,7 +5,8 @@
 
 (function(){
 
-    $request = new src\Request(['req', 'task', 'secret']);
+    $request = _request(['req', 'task', 'secret']);
+
     if(!$request['task'] || 
         (_is_in_production() 
         && (!$request['secret'] 

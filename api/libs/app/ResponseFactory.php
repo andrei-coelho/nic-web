@@ -3,7 +3,6 @@
 namespace libs\app;
 
 use libs\app\Response as Response; 
-use src\Request as request;
 
 class ResponseFactory {
 
@@ -11,7 +10,7 @@ class ResponseFactory {
         
         $refFunction = new \ReflectionFunction($func);
         $parameters = $refFunction->getParameters();
-        $vars = request::raw();
+        $vars = _data();
 
         $validParameters = [];
 
@@ -20,7 +19,7 @@ class ResponseFactory {
             $type = $parameter->getType() ? $parameter->getType() : 'mixed';
             if (!$exists && !$parameter->isOptional()) _error(400, 'Bad Request Vars - there are variables that were not sent and that are not optional');
             if(!$exists) continue;
-            $validParameters[$parameter->getName()] = request::clean_value($vars[$parameter->getName()], $type);
+            $validParameters[$parameter->getName()] = _clean_value($vars[$parameter->getName()], $type);
         }
 
         $response = $refFunction->invoke(...$validParameters);

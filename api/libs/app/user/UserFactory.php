@@ -17,7 +17,7 @@ class UserFactory extends User {
     public static function generate_by_session(string $session, string $slug_service, string $slug_function){
         
         if(self::$user) return self::$user;
-
+        $hoje = date('Y-m-d H:i:s');
         $userSel =
         _query(
             "SELECT 
@@ -32,7 +32,7 @@ class UserFactory extends User {
                 user_client.master as user_master,
                 session.expire     as session_expire,
                 user.admin,
-                (case when(session.expire < '2022-04-09 20:16') THEN 0 ELSE 1 END) as valid_session
+                (case when(session.expire < '$hoje') THEN 0 ELSE 1 END) as valid_session
             FROM user 
                 JOIN session ON session.user_id = user.id
                     LEFT JOIN user_admin       ON user_admin.user_id = user.id
@@ -55,6 +55,10 @@ class UserFactory extends User {
         if($userRow['user_ativo'] == 0) return false;
         if($userRow['admin'] == 0 && $userRow['client_ativo'] == 0) return false;
         
+        if(!($valid = $userRow['valid_session'] == 1)){
+            _exec("UPDATE session SET ativo = 0  WHERE hash = '$session'");
+        }
+
         self::$user = $userRow['admin'] == 1 
                     ? new UserAdmin(
                         $userRow['user_id'],
@@ -63,7 +67,7 @@ class UserFactory extends User {
                         $userRow['user_email'],
                         $session,
                         $userRow['session_expire'],
-                        ($userRow['valid_session'] == 1)
+                        $valid
                     ) 
                     : new UserClient(
                         $userRow['user_id'],
@@ -72,7 +76,7 @@ class UserFactory extends User {
                         $userRow['user_email'],
                         $session,
                         $userRow['session_expire'],
-                        ($userRow['valid_session'] == 1),
+                        $valid,
                         $userRow['client_nome'],
                         $userRow['user_master'],
                         $userRow['client_slug']

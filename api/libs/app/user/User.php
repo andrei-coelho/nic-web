@@ -14,7 +14,7 @@ abstract class User {
 
     protected function upgradeSession(){
         // atualiza sessão do usuário se for necessário
-        echo "fez upgrade";
+        //echo "fez upgrade";
     }
 
     public function to_array(){

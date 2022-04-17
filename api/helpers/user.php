@@ -8,15 +8,15 @@ use src\Request as request;
 
 function _user(){
     
-    $request = new request(['req', 'route', 'func', 'session']);
-    
-    if(!$request->vars['session']) return false;
+    $request = new request(['req', 'route', 'func']);
+    $session = _data('session');
+    if(!$session) return false;
 
     return 
            ($user = UserFactory::get_user())
         ?  $user 
         : UserFactory::generate_by_session(
-            $request->vars['session'], 
+            $session, 
             $request->vars['route'], 
             $request->vars['func']
         );
