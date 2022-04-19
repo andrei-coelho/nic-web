@@ -16,3 +16,9 @@ function _gen_session(int $id_user){
     
     return $status ? [$new_session, $expire] : false;
 }
+
+function _gen_human_session($user_email){
+    $sname = explode('@', $user_email)[0]; 
+    sleep(1);
+    return 'session-'.trim($sname).'-'.date('dmY-his');
+}

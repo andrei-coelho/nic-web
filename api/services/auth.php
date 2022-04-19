@@ -12,8 +12,41 @@
  * @function:logar
  * @pool:public
  */
-function logar(){
-    return _response([]);
+function logar($email, $senha){
+
+    $userSel = _query(
+        "SELECT 
+            user.id,
+            user.senha
+        FROM user 
+        WHERE 
+        user.email ='$email' AND user.ativo = 1;"
+    );
+
+    if($userSel->rowCount() == 0) _error(404, 'O email está errado, não foi cadastrado ou está bloqueado');
+    $user = $userSel->fetchAssoc();
+    // $status = password_verify($senha, $user['senha']);
+    $status = $senha == $user['senha']; // apagar depois
+    $user_id = $user['id'];
+   
+    if(!$status) _error(404, 'A senha enviada não é a mesma cadastrada');
+
+    if(!_exec("UPDATE 
+        session SET ativo = 0 
+        WHERE user_id = $user_id")) 
+    _error(500, 'Server problem');
+   
+    $hoje   =  date("Y-m-d H:i:s");
+    $expire =  date('Y-m-d H:i:s', strtotime($hoje. ' + 2 days'));
+    $sess   = _gen_human_session($email);
+   
+    if(!_exec("INSERT 
+        INTO session (user_id, hash, expire, ativo) 
+        VALUES($user_id, '$sess', '$expire', 1)")) 
+    _error(500, 'Server problem');
+
+    return _response([], '', $sess);
+   
 }
 
 /**
@@ -22,6 +55,16 @@ function logar(){
  */
 function forgot(){
     
+}
+
+/**
+ * @function:refresh_user_client
+ * @pool:public
+ */
+function refresh_user_client(){
+    $user = _user();
+    if(!$user || !$user instanceof libs\app\user\UserClient) _error();
+    // altera a sessão antiga para uma nova
 }
 
 

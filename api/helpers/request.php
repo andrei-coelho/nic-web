@@ -8,6 +8,7 @@ function _request(array $arr){
 
 function _data($key = false){
     $raw = request::raw();
+    if(!$key) return $raw;
     return $key && isset($raw[$key]) ? $raw[$key] : false;
 }
 

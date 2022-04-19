@@ -12,5 +12,7 @@ FROM view_subpage
 	JOIN permission_pool ON permission_pool.id = view_subpage.permission_pool_id
 	JOIN user_permission ON user_permission.permission_pool_id = permission_pool.id
 	JOIN user ON user.id = user_permission.user_id
-WHERE user.id = 2 
-ORDER BY view_page.main DESC, view_subpage.main DESC;
+WHERE 
+	user.id = 2 
+ORDER BY 
+	view_page.main DESC, view_subpage.main DESC;
