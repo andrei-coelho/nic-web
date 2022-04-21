@@ -1,1 +1,59 @@
-home
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test</title>
+</head>
+<body>
+    
+    <script src="https://unpkg.com/vue@3"></script>
+
+    <div id="app">
+
+        <input type="file" @change="handleFileUpload($event)">
+        <button @click="uploadFile()">Enviar</button>
+    </div>
+    
+<script>
+    Vue.createApp({
+        data() {
+            return {
+                file:null
+            }
+        },
+        methods: {
+            handleFileUpload(e){
+                this.file = e.target.files[0];
+            },
+
+            async uploadFile(){
+                
+                if(!this.file) return;
+
+                var reader = new FileReader();
+
+                reader.onload = async e => {
+                    let res = await fetch('http://localhost:8800/api/@test/test', {
+                        method: 'POST',
+                        body: e.target.result
+                    }).then(res => res.text());
+
+                    // pare de mostrar o upload
+                    console.log(res);
+                };
+
+                reader.error = e => {
+                    console.log(e);
+                }
+
+                reader.readAsDataURL(this.file);
+
+            }
+        },
+
+    }).mount('#app')
+</script>
+
+</body>
+</html>

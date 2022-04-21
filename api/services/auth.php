@@ -14,6 +14,8 @@
  */
 function logar($email, $senha){
 
+    sleep(1);
+
     $userSel = _query(
         "SELECT 
             user.id,
@@ -38,7 +40,8 @@ function logar($email, $senha){
    
     $hoje   =  date("Y-m-d H:i:s");
     $expire =  date('Y-m-d H:i:s', strtotime($hoje. ' + 2 days'));
-    $sess   = _gen_human_session($email);
+    $sess   = _gen_human_session($email); // usar o debaixo em produção
+    // $sess   = _gen_session($user_id);
    
     if(!_exec("INSERT 
         INTO session (user_id, hash, expire, ativo) 
@@ -62,6 +65,7 @@ function forgot(){
  * @pool:public
  */
 function refresh_user_client(){
+    sleep(1);
     $user = _user();
     if(!$user || !$user instanceof libs\app\user\UserClient) _error();
     // altera a sessão antiga para uma nova
