@@ -7,4 +7,5 @@ Route::register('@testederota', 'test');
 #!
 Route::register('@auth', 'auth');
 Route::register('client@clients', 'client/clients');
+Route::register('client@files', 'client/files');
 Route::register('@test', 'test');

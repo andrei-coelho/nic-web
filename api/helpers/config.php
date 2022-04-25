@@ -14,6 +14,6 @@ function _salt(){
     return config::get("salt");
 }
 
-function _token(){
-    return !_is_in_production() ? config::get("tk_dropbox") : "";
+function _refresh_token(){
+    return !_is_in_production() ? config::get("refresh_tk") : "";
 }

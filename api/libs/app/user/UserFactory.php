@@ -26,6 +26,7 @@ class UserFactory extends User {
                 user.nome          as user_nome,
                 user.email         as user_email,
                 user.slug          as user_slug,
+                client.id          as client_id,
                 client.ativo       as client_ativo,
                 client.slug        as client_slug,
                 client.nome        as client_nome,
@@ -79,7 +80,8 @@ class UserFactory extends User {
                         $valid,
                         $userRow['client_nome'],
                         $userRow['user_master'],
-                        $userRow['client_slug']
+                        $userRow['client_slug'],
+                        $userRow['client_id']
                     );
         
         self::$user->upgradeSession();

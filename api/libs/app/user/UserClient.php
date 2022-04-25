@@ -8,7 +8,8 @@ class UserClient extends User {
 
     private $client_nome,
             $user_master,
-            $client_slug;
+            $client_slug,
+            $client_id;
 
     public function __construct(
         $id,
@@ -21,7 +22,8 @@ class UserClient extends User {
         # variaveis do cliente
         $client_nome,
         $user_master,
-        $client_slug
+        $client_slug,
+        $client_id
         ) {
             $this->id      = $id;
             $this->nome    = $nome;
@@ -34,12 +36,16 @@ class UserClient extends User {
             $this->client_nome  = $client_nome;
             $this->user_master  = $user_master;
             $this->client_slug  = $client_slug;
+            $this->client_id    = $client_id;
+            $this->isClient     = true;
+
     }
 
     public function getClientArray(){
         return [
             "client_nome"  => $this->client_nome,
-            "client_slug"  => $this->client_slug
+            "client_slug"  => $this->client_slug,
+            "client_id"    => $this->client_id
         ];
     }
 }

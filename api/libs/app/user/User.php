@@ -11,6 +11,7 @@ abstract class User {
     protected $nome;
     protected $id;
     protected $valid;
+    protected $isClient = false;
 
     protected function upgradeSession(){
         // atualiza sessão do usuário se for necessário
@@ -34,5 +35,9 @@ abstract class User {
 
     public function session(){
         return $this->session;
+    }
+
+    public function is_client(){
+        return $this->isClient;
     }
 }

@@ -22,7 +22,9 @@ class ResponseFactory {
             $validParameters[$parameter->getName()] = _clean_value($vars[$parameter->getName()], $type);
         }
 
-        $response = $refFunction->invoke(...$validParameters);
+        $values = array_values($validParameters);
+
+        $response = $refFunction->invoke(...$values);
         if(!$response || !($response instanceof Response)) return _response([]);
 
         return $response;
