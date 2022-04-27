@@ -14,9 +14,9 @@ class ServiceFactory {
     public static function commit(){
         // deleta todos os registros
         
-        $status1 = _exec("DELETE FROM permission_func");
-        $status2 = _exec("DELETE FROM service_function");
-        $status3 = _exec("DELETE FROM service");
+        $status1 = _exec("DELETE FROM permission_func WHERE fixed = 0");
+        $status2 = _exec("DELETE FROM service_function WHERE fixed = 0");
+        $status3 = _exec("DELETE FROM service WHERE fixed = 0");
 
         $routesPath = "../api/routes.php";
         $routesSplited = explode('#', file_get_contents($routesPath));

@@ -36,9 +36,15 @@ function getToken($key, $secret, $refreshToken) {
 
 $client = new Spatie\Dropbox\Client( getToken($appKey, $appSecret, _refresh_token()));
 echo "<pre>";
-print_r($client->listFolder('Teste')); //lista o conteúdo da pasta Teste
+print_r($client->getTemporaryLink('id:9AlBj80nMiAAAAAAAAAAEw'));
+//print_r($client->download('id:9AlBj80nMiAAAAAAAAAAEw')); //lista o conteúdo da pasta Teste
 echo "</pre>";
 
+/*
+echo "<pre>";
+print_r($client->listFolder('Teste')); //lista o conteúdo da pasta Teste
+echo "</pre>";
+*/
 //$client->createFolder('teste');
 // curl  \-d grant_type=authorization_code \-u 1e4k5ox2hkwqeu5:1e4k5ox2hkwqeu5
 //print_r($client->upload('teste/corel2.cdr', file_get_contents('../files_to_upload/corel.cdr')));

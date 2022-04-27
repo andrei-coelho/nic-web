@@ -588,6 +588,7 @@ class EditImage {
 
 			case 'png':
 				$res = \imagecreatefrompng($from);
+				imagefill($res,0,0,imagecolorallocate($res, 255, 255, 255)); 
 				\imagealphablending($res, false);
 				\imagesavealpha($res, true);
 				return $res;

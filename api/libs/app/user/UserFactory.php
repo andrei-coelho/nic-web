@@ -30,6 +30,7 @@ class UserFactory extends User {
                 client.ativo       as client_ativo,
                 client.slug        as client_slug,
                 client.nome        as client_nome,
+                directory.hash_dir as client_path,
                 user_client.master as user_master,
                 session.expire     as session_expire,
                 user.admin,
@@ -44,6 +45,8 @@ class UserFactory extends User {
                     LEFT JOIN permission_func  ON permission_func.permission_pool_id = permission_pool.id
                     LEFT JOIN service_function ON service_function.id  = permission_func.service_function_id
                     LEFT JOIN service          ON service.id = service_function.service_id
+                    LEFT JOIN client_path      ON client_path.client_id = client.id
+                    LEFT JOIN directory        ON client_path.directory_id = directory.id
             WHERE 
                 ((user.admin = 1)
                 OR (service.slug = '$slug_service' AND service_function.slug = '$slug_function'))
@@ -81,6 +84,7 @@ class UserFactory extends User {
                         $userRow['client_nome'],
                         $userRow['user_master'],
                         $userRow['client_slug'],
+                        $userRow['client_path'],
                         $userRow['client_id']
                     );
         

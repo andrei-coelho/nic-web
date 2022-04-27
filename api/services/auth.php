@@ -86,8 +86,9 @@ function load_me(){
     $user_a = $user->to_array();
     if($user instanceof libs\app\user\UserClient){
         $clie_a = $user->getClientArray();
-        $user_a['cliente_nome'] = $clie_a['client_nome'];
-        $user_a['cliente_slug'] = $clie_a['client_slug'];
+        $user_a['client_nome'] = $clie_a['client_nome'];
+        $user_a['client_slug'] = $clie_a['client_slug'];
+        $user_a['client_path'] = $clie_a['client_path'];
     }
 
     $id = $user_a['id'];

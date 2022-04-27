@@ -6,8 +6,9 @@ include "../api/external_libs/google-client/vendor/autoload.php";
 
 $serviceDrive = new Google_Service_Drive(getClient());
 
-upload_file($serviceDrive, '../upload_for_test/', 'projeto.pdf');
+//upload_file($serviceDrive, '../upload_for_test/', 'projeto.pdf');
 list_files($serviceDrive);
+download_file($serviceDrive);
 # 1kHg88VxHq0rf7wdb_rVDGQxDDAQAnlCJ
 // download_file($serviceDrive);
 

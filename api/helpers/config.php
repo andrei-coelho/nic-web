@@ -3,11 +3,11 @@
 use libs\app\Config as config;
 
 function _is_in_production(){
-    return config::get("production");
+    return config::get("type") == 'production';
 }
 
 function _url(){
-    return _is_in_production() ? config::get("production_url") : config::get("development_url");
+    return _is_in_production() ? config::get("prod_url") : config::get("dev_url");
 }
 
 function _salt(){

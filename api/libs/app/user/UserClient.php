@@ -9,6 +9,7 @@ class UserClient extends User {
     private $client_nome,
             $user_master,
             $client_slug,
+            $client_path,
             $client_id;
 
     public function __construct(
@@ -23,6 +24,7 @@ class UserClient extends User {
         $client_nome,
         $user_master,
         $client_slug,
+        $client_path,
         $client_id
         ) {
             $this->id      = $id;
@@ -37,6 +39,7 @@ class UserClient extends User {
             $this->user_master  = $user_master;
             $this->client_slug  = $client_slug;
             $this->client_id    = $client_id;
+            $this->client_path  = $client_path;
             $this->isClient     = true;
 
     }
@@ -45,7 +48,8 @@ class UserClient extends User {
         return [
             "client_nome"  => $this->client_nome,
             "client_slug"  => $this->client_slug,
-            "client_id"    => $this->client_id
+            "client_id"    => $this->client_id,
+            "client_path"  => $this->client_path,
         ];
     }
 }
