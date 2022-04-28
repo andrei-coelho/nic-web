@@ -4,12 +4,13 @@ namespace libs\app\user;
 
 abstract class User {
 
+    public $id; // deixe isso público
+
     protected $session;
     protected $expire;
     protected $slug;
     protected $email;
     protected $nome;
-    protected $id;
     protected $valid;
     protected $isClient = false;
 
@@ -39,5 +40,9 @@ abstract class User {
 
     public function is_client(){
         return $this->isClient;
+    }
+
+    public function id(){
+        return $this->id;
     }
 }
