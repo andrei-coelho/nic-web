@@ -26,21 +26,38 @@ function move_file($hash_file, $hash_dir, $client_id = 0){
     if($user->is_client()){
         $client_arr  = $user->getClientArray();
         $client_id   = $client_arr['client_id'];
+        $client_path = $client_arr['client_path'];
     } 
-
+    if($hash_dir == "") $hash_dir = $client_path;
+    
     $table = "file_client";
-    $q = _query("SELECT id FROM $table WHERE hash_file = '$hash_file'");
+    $q = _query(
+        "SELECT 
+            $table.id,
+            $table.hash_file as hashId
+        FROM  $table 
+        JOIN  directory ON directory.id = $table.directory_id
+        WHERE $table.hash_file = '$hash_file' AND NOT directory.hash_dir = '$hash_dir'");
     if($q->rowCount()==0){
         $table = "directory";
-        $q = _query("SELECT id FROM $table WHERE hash_dir = '$hash_file' AND visible = 1");
+        $q = _query(
+            "SELECT filho.id,
+                    filho.hash_dir as hashId
+                FROM $table as filho JOIN directory as pai ON filho.directory_id = pai.id
+                WHERE filho.hash_dir = '$hash_file' 
+                AND NOT pai.hash_dir = '$hash_dir'");
         if($q->rowCount()==0) 
-        _error();
+        _error(404, 'O arquivo já está no diretório escolhido');
     }
+    
+    $file   = $q->fetchAssoc();
+    $idFile = $file['id'];
+    $hashIdFile = $file['hashId'];
 
-    $idFile = $q->fetchAssoc()['id'];
+    if($hashIdFile == $hash_dir) _error(404, '');
 
-    $query = _query("SELECT id FROM directory WHERE hash_dir = '$hash_dir' AND visible = 1");
-    if($query->rowCount()==0)_error();
+    $query = _query("SELECT id FROM directory WHERE hash_dir = '$hash_dir'");
+    if($query->rowCount()==0) _error();
 
     $id = $query->fetchAssoc()['id'];
 
@@ -90,9 +107,9 @@ function delete_file($hash_file, $type, $client_id = 0){
         // pegar todos os arquivos dos diretórios
         $indirs = implode(',', $ids);
         $sfiles = _query("SELECT id, hash_file, saved, mime_type FROM file_client WHERE directory_id IN (".$indirs.")");
+        _exec("DELETE FROM directory WHERE id IN (".$indirs.")");
         if($sfiles->rowCount() > 0){
             $files = $sfiles->fetchAllAssoc();
-            _exec("DELETE FROM directory WHERE id IN (".$indirs.")");
             foreach ($files as $file) {
                 _remove_file($client_path,$file);
             }
@@ -393,13 +410,56 @@ function save_file($name, $mime, $file, $hash_dir = "", $client_id = false){
 }
 
 function _get_thumb($session, $ext, $client_path, $hashId){
+    
     $icon = "public/img/icons/$ext.jpg";
-    return in_array($ext, ['jpg', 'png']) 
-    ? _url().'thumbnail/'.$session.'/'.$client_path.'/'. $hashId.'.'.$ext 
-    : (file_exists("../".$icon) 
-    ? _url().$icon 
-    : _url()."public/img/icons/default.jpg");
+    $file = false;
+    if(in_array($ext, ['jpg', 'png', 'jpeg'])){
+        
+        if(file_exists('../thumbs/'.$client_path.'/'. $hashId.'.'.$ext)){
+            $file = _url().'thumbnail/'.$session.'/'.$client_path.'/'. $hashId.'.'.$ext;
+        }
+
+        if(file_exists('../thumbs/'.$client_path.'/'. $hashId.'..'.$ext)){
+            $file = _url().'thumbnail/'.$session.'/'.$client_path.'/'. $hashId.'..'.$ext;
+        }
+    }
+
+    return $file
+         ? $file
+         : (file_exists("../".$icon) 
+         ? _url().$icon 
+         : _url()."public/img/icons/default.jpg");
 }
+
+
+/**
+ * @function:list_all_folders
+ * @pool:manage_files
+ */
+
+ function list_all_folders($hash_dir = "", $client_id = 0){
+    
+    $user = _user();
+    if($user->is_client()){
+      
+        $client_arr  = $user->getClientArray();
+        $client_id   = $client_arr['client_id'];
+        $client_path = $client_arr['client_path'];
+        
+    } else {
+        $pathSel = _query(
+            "SELECT directory.hash_dir
+            FROM directory
+            JOIN client_path ON directory.id = client_path.directory_id
+            JOIN client ON client.id = client_path.client_id
+            WHERE client.id = $client_id AND directory.visible = 1");
+        if($pathSel->rowCount() == 0) _error();
+        $client_path = $pathSel->fecthAssoc()['hash_dir'];
+    }
+
+    if($hash_dir == "") $hash_dir = $client_path;
+    return _response(_get_list_folder($hash_dir, $client_id));
+ }
 
 /**
  * @function: list_all_files
@@ -425,26 +485,18 @@ function list_all_files($hash_dir = "", $client_id = 0){
         if($pathSel->rowCount() == 0) _error();
         $client_path = $pathSel->fecthAssoc()['hash_dir'];
     }
-    
+
     if($hash_dir == "") $hash_dir = $client_path;
-        
-    if(!($dirId = _is_client_folder($hash_dir, $client_id))) 
-    _error(401, "Não autorizado");
 
-    $contents = [];
+    return _response(array_merge(
+        _get_list_folder($hash_dir, $client_id), 
+        _get_list_files($hash_dir, $client_path)
+    ));
 
-    $dirsSel = _query(
-        "SELECT
-        child.nome,
-        child.hash_dir as hashId,
-        (CASE WHEN(true) THEN 'dir' END) as `type`
-        FROM  directory as child JOIN directory as main ON main.id = child.directory_id
-        WHERE main.hash_dir = '$hash_dir' AND child.visible = 1
-        ORDER BY child.nome ASC;
-    ");
-    
-    if($dirsSel->rowCount() > 0) 
-    $contents = $dirsSel->fetchAllAssoc();
+}
+
+
+function _get_list_files($hash_dir, $client_path){
 
     $filesSel = _query(
         "SELECT 
@@ -472,14 +524,31 @@ function list_all_files($hash_dir = "", $client_id = 0){
                 'novo'   => false
             ];
 
-            $ffinal['thumb'] = _get_thumb($user->session(), $file['ext'], $client_path, $file['hashId']);
+            $ffinal['thumb'] = _get_thumb(_user()->session(), $file['ext'], $client_path, $file['hashId']);
             $fsfinal[] = $ffinal;
         }
     }
-    
-    $contents = array_merge($contents, $fsfinal);
-    return _response($contents);
 
+    return $fsfinal;
+
+}
+
+function _get_list_folder($hash_dir, $client_id){
+    
+    if(!($dirId = _is_client_folder($hash_dir, $client_id))) 
+    _error(401, "Não autorizado");
+
+    $dirsSel = _query(
+        "SELECT
+        child.nome,
+        child.hash_dir as hashId,
+        (CASE WHEN(true) THEN 'dir' END) as `type`
+        FROM  directory as child JOIN directory as main ON main.id = child.directory_id
+        WHERE main.hash_dir = '$hash_dir' AND child.visible = 1
+        ORDER BY child.nome ASC;
+    ");
+    
+    return  $dirsSel->rowCount() > 0 ? $dirsSel->fetchAllAssoc() : [];
 }
 
 
@@ -487,8 +556,9 @@ function list_all_files($hash_dir = "", $client_id = 0){
  * @function: list_public_files
  * @pool:manage_files,files_basic
  */
-function list_public_files(){
+function list_public_files($hash_dir, $client_path){
 
+    
 
 }
 

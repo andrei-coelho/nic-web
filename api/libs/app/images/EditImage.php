@@ -633,6 +633,7 @@ class EditImage {
 	{
 		switch($type){
 			case "image/jpeg":
+				return "jpeg";
 			case "image/jpg":
 				return "jpg";
 			case "image/png":
