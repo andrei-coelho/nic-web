@@ -1,5 +1,8 @@
 <?php 
 
+ini_set("memory_limit", "-1");
+set_time_limit(0);
+
 header("Access-Control-Allow-Origin: *");
 header('Content-Type: application/json; charset=utf-8');
 

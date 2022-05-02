@@ -34,7 +34,11 @@ function getToken($key, $secret, $refreshToken) {
     }
 }
 
-$client = new Spatie\Dropbox\Client( getToken($appKey, $appSecret, _refresh_token()));
+$client = new Spatie\Dropbox\Client( getToken('jkhfjkh', $appSecret, _refresh_token()));
+
+print_r($client->upload('0f6e2ebdd08e0c50d1e65e985314b262.txt', file_get_contents('../files_to_upload/hasslugraizteste/0f6e2ebdd08e0c50d1e65e985314b262.txt')));
+
+/*
 echo "<pre>";
 print_r($client->getTemporaryLink('id:9AlBj80nMiAAAAAAAAAAEw'));
 //print_r($client->download('id:9AlBj80nMiAAAAAAAAAAEw')); //lista o conteúdo da pasta Teste
