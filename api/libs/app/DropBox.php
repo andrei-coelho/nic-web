@@ -29,7 +29,7 @@ class Dropbox {
         
         if(!isset(self::$temporary_tokens[$client_id])){
             $this->temp_key = $tokens['expired'] == 1 
-                        ? $this->getTemporaryToken()
+                        ? self->getTemporaryToken($this->app_key,$this->secret_key,)
                         : $tokens['temp_key'];
             self::$temporary_tokens[$client_id] = $this->temp_key;
             if($tokens['expired'] == 1)
@@ -54,7 +54,7 @@ class Dropbox {
                     directory.hash_dir as client_path,
                     (CASE WHEN(dropbox_tk.expire_temp_key < '$hoje') THEN 1 ELSE 0 END) as expired
                FROM dropbox_tk
-               JOIN client_path ON client_path.drobox_tk_id = dropbox_tk.id
+               JOIN client_path ON client_path.dropbox_tk_id = dropbox_tk.id
                JOIN directory   ON directory.id = client_path.directory_id
               WHERE
                     client_path.client_id = ".$this->client_id);
@@ -62,7 +62,7 @@ class Dropbox {
         return $query->fetchAssoc();
     }
 
-    private function getTemporaryToken(){
+    private static function getTemporaryToken($app_key, $secret_key, $refresh_token){
         try {
             $client = new \GuzzleHttp\Client();
             $res = $client->request("POST", "https://{$this->app_key}:{$this->secret_key}@api.dropbox.com/oauth2/token", [
@@ -77,8 +77,7 @@ class Dropbox {
                 return false;
             }
         }
-        catch (Exception $e) {
-            // $this->logger->error("[{$e->getCode()}] {$e->getMessage()}");
+        catch (\Exception $e) {
             return false;
         }
     }
@@ -111,10 +110,18 @@ class Dropbox {
                 $response = $this->client->upload($file_name, file_get_contents($file));
                 return $response['id'];
             } else {
-                echo $file."<br>";
                 return false;
             }
         } catch(\Exception $e){
+            return false;
+        }
+    }
+
+    public function deleteFile($dropbox_file_hash_id){
+        try {
+            $response = $this->client->delete($dropbox_file_hash_id);
+            return $response;
+        } catch (\Exception $e) {
             return false;
         }
     }

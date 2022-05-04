@@ -1,7 +1,13 @@
-<?php 
+<?php
+
 /**
  * @service: files
  */
+
+ /*
+error_reporting(0);
+ini_set('display_errors', 0);
+*/
 
 use  libs\app\FileManager as file;
 use  libs\app\DropBox as dropbox;
@@ -112,7 +118,6 @@ function get_public_link($hash_file, $client_id = 0){
  * @function:get_link
  * @pool:manage_files
  */
-
 function get_link($hash_file, $client_id = 0){
     
     $user =  _user();
@@ -193,6 +198,8 @@ function delete_file($hash_file, $type, $client_id = 0){
         $client_id   = $client_arr['client_id'];
         $client_path = $client_arr['client_path'];
     }
+
+    $dropbox_tk_id = _get_dropbox_tk_id($client_id);
         
     if($type == 'dir'){
         
@@ -222,41 +229,78 @@ function delete_file($hash_file, $type, $client_id = 0){
         }
         // pegar todos os arquivos dos diretórios
         $indirs = implode(',', $ids);
-        $sfiles = _query("SELECT id, hash_file, saved, mime_type FROM file_client WHERE directory_id IN (".$indirs.")");
+        $sfiles = _query(
+            "SELECT 
+                    file_client.id, 
+                    file_client.hash_file, 
+                    file_client.dropbox_hash_id, 
+                    file_client.saved, 
+                    file_client.mime_type
+               FROM file_client 
+               JOIN directory   ON directory.id = file_client.directory_id 
+              WHERE 
+              file_client.directory_id IN (".$indirs.")");
         _exec("DELETE FROM directory WHERE id IN (".$indirs.")");
         if($sfiles->rowCount() > 0){
             $files = $sfiles->fetchAllAssoc();
             foreach ($files as $file) {
-                _remove_file($client_path,$file);
+                _remove_file($client_path,$file,$dropbox_tk_id);
             }
         }
 
     } else {
 
-        $sfiles = _query("SELECT id, hash_file, saved, mime_type FROM file_client WHERE hash_file = '$hash_file'");
+        $sfiles = _query(
+            "SELECT 
+                   file_client.id, 
+                   file_client.hash_file,
+                   file_client.dropbox_hash_id, 
+                   file_client.saved, 
+                   file_client.mime_type
+              FROM file_client 
+              JOIN directory   ON directory.id = file_client.directory_id 
+              WHERE file_client.hash_file = '$hash_file'
+        ");
+
         if($sfiles->rowCount() > 0){
             $file = $sfiles->fetchAssoc();
             _exec("DELETE FROM file_client WHERE id = ".$file['id']);
-            _remove_file($client_path,$file);
+            _remove_file($client_path,$file,$dropbox_tk_id);
         }
     }
 
 }
 
 
-function _remove_file($client_path, $file){
-
+function _remove_file($client_path, $file, $dropbox_tk_id){
+    
+    $fileRoute = $client_path.'/'.$file['hash_file'].".".$file['mime_type'];
+    $fileThumb = '../thumbs/'.$fileRoute;
+    
+    if(file_exists($fileThumb))unlink($fileThumb);
+    
     if($file['saved'] == 0){
-        $fileRoute = $client_path.'/'.$file['hash_file'].".".$file['mime_type'];
         $fileToUp  = '../files_to_upload/'.$fileRoute;
-        $fileThumb = '../thumbs/'.$fileRoute;
         if(file_exists($fileToUp))unlink($fileToUp);
-        if(file_exists($fileThumb))unlink($fileThumb);
     } else {
-        // coloca os arquivos em epera para serem deletados 
-        // no repositório do dropbox
+        $hashId = $file['dropbox_hash_id'];
+        _exec("INSERT INTO 
+        file_to_delete(dropbox_tk_id, dropbox_hash_id)
+        VALUES ($dropbox_tk_id, '$hashId')");
     }
     
+}
+
+function _get_dropbox_tk_id($client_id){
+    $query = _query(
+        "SELECT 
+            dropbox_tk.id
+            FROM client_path
+            JOIN dropbox_tk ON dropbox_tk.id = client_path.dropbox_tk_id 
+            WHERE client_path.client_id = $client_id
+        ");
+    if($query->rowCount() > 0) return $query->fetchAssoc()['id'];
+    return 0;
 }
 
 /**
@@ -464,62 +508,36 @@ function update_file(){
     
 }
 
+
+
 /**
  * @function:save_file
  * @pool:manage_files
  */
-function save_file($name, $mime, $file, $hash_dir = "", $client_id = false){
+function save_file($name, $mime, $file, $flag, $hashId = "", $hash_dir = "", $client_id = 0){
     
     $user = _user();
   
     if($user->is_client()){
-      
         $client_arr  = $user->getClientArray();
         $client_id   = $client_arr['client_id'];
         $client_path = $client_arr['client_path'];
-        
     } else {
         $client_path = _get_client_path($client_id);
     }
-    
+
     if($hash_dir == "") $hash_dir = $client_path;
         
     if(!($dirId = _is_client_folder($hash_dir, $client_id))) 
-    _error(401, "Não autorizado");
-  
-    sleep(mt_rand(3, 8));
-        
-    try {
-      
-        $hashFile = (new file($client_path, $name, $mime))->upload($file)->hash();
-        if(!$hashFile) _error(400, "Ocorreu um erro ao tentar salvar o arquivo");
-  
-        $idInsert = _exec(
-            "INSERT INTO 
-            file_client(nome, hash_file, mime_type, directory_id)
-            VALUES ('$name', '$hashFile', '$mime', $dirId)", true);
-      
-        if(!$idInsert) _error(400, "Ocorreu um erro ao tentar salvar o arquivo");
-        
-        _query(
-            "INSERT INTO 
-            file_client_info (file_client_id, created_user_id, createdAt)
-            VALUES ($idInsert, $user->id, now())");
+        _error(401, "Não autorizado");
 
-        return _response([
-            'type'   => 'file',
-            'hashId' => $hashFile,
-            'nome'   => $name,
-            'ext'    => $mime,
-            'thumb'  => _get_thumb($user->session(), $mime,  $client_path, $hashFile),
-            'novo'   => true,
-            'options'=> true,
-            'publico'=> false
-        ]);
-  
-    } catch(Exception $e){
-        return _error(400, $e->getMessage());
-    }
+    include "_upload_file.php";
+
+    if($flag == 'save'  ) return __upload_save($user, $name, $mime, $file, $client_path, $dirId);
+    if($flag == 'create') return __upload_create($client_path, $name, $mime, $dirId);
+    if($flag == 'append') return __upload_append($client_path, $hashId.".".$mime, $file);
+    if($flag == 'commit') return __upload_commit($user, $hashId, $mime, $client_path);
+
 }
 
 function _get_thumb($session, $ext, $client_path, $hashId){

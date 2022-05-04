@@ -21,81 +21,105 @@ class FileManager {
         $this->mime = $mime;
     }
 
-    public function upload($file){
-        
-        $hash = md5(uniqid(rand(), true).$this->raiz);
-
-        @list($mime_slug, $file) = explode(';', $file);
-        @list(, $data) = explode(',', $file);
-
-        $this->data = base64_decode($data);
-        
-        $pathClient = '../files_to_upload/'.$this->raiz.'/';
-        if(!file_exists($pathClient)) {
-            mkdir($pathClient, 0777, true);
-        }
-        
-        $slugFile = $hash.'.'.$this->mime;
-        $pathFile = $pathClient.$slugFile;
-
-        if(($statusUP = file_put_contents($pathFile, $this->data)) && $this->create_thumb){
-            
-            $pathThumb = '../thumbs/'.$this->raiz.'/';
-            if(!file_exists($pathThumb)) {
-                mkdir($pathThumb, 0777, true);
-            }
-
-            $pathThumb .= $slugFile;
-
-            try {
-                EditImage::from($pathFile)
-                ->path($pathThumb)
-                ->resize('200x*')
-                ->save();
-            }catch(\Exception $e){
-                echo $e->getMessage();
-            }
-            
-        }
-
-        $this->hash = $statusUP ? $hash : false;
-        return $this;
-
-    }
-
     public function hash(){
         return $this->hash;
     }
 
+    public function upload($file, $set_thumb = true){
+        
+        $hash = md5(uniqid(rand(), true).$this->raiz);
 
-    public static function create_ghost_file($hash_dir, $client_id){
+        if($file !== ""){
+            @list($mime_slug, $file) = explode(';', $file);
+            @list(, $data) = explode(',', $file);
+            $this->data = base64_decode($data);
+        } else {
+            $this->data = false;
+        }
         
-        $dirIdSel = 
-            _query(
-            "SELECT id 
-                FROM directory 
-                WHERE hash_dir = '$hash_dir' AND client_id = $client_id
-            ");
+        $pathClient = '../files_to_upload/'.$this->raiz.'/';
+        if(!file_exists($pathClient)) 
+            mkdir($pathClient, 0777, true);
         
-        if($dirIdSel->rowCount() == 0) throw new \Exception("Diretório não existe", 2);
-        
-        $dirId     = $dirIdSel->fetchAssoc()['id'];
-        $hash_file = md5(uniqid(rand(), true).$hash_dir);
+        $slugFile = $hash.'.'.$this->mime;
+        $pathFile = $pathClient.$slugFile;
 
-        return 
-            _exec(
-                "INSERT INTO 
-                    file_client (hash_file, directory_id) 
-                    VALUES      ('$hash_file', $dirId);"
-                ) 
-            ? $hash_file
-            : false;
+        $statusUP = file_put_contents($pathFile, ($this->data ? $this->data : ''));
+
+        if($this->create_thumb && $set_thumb)
+            $this->create_thumbnail($slugFile, $pathFile);
+        
+        $this->hash = $statusUP !== false ? $hash : false;
+       
+        return $this;
 
     }
 
+    public function create_ghost_file($dirId){
+        
+        $this->upload("", false);
+        $nome = $this->name;
+        $mime = $this->mime;
 
-    public function update(){
-        // recupera o nome do arquivo salvo, apaga, e sava este novo
+        if($this->hash){
+            $hash_file = $this->hash;
+            _exec(
+                "INSERT 
+                 INTO   file_client 
+                        (nome, mime_type, hash_file, directory_id, ghost) 
+                 VALUES ('$nome', '$mime', '$hash_file', $dirId, 1);"
+            );
+
+        }
+        return $this;
+    
+    }
+
+    private function create_thumbnail($slugFile, $pathFile){
+        
+        $pathThumb = '../thumbs/'.$this->raiz.'/';
+        if(!file_exists($pathThumb))
+            mkdir($pathThumb, 0777, true);
+
+        $pathThumb .= $slugFile;
+
+        try {
+            EditImage::from($pathFile)
+            ->path($pathThumb)
+            ->resize('200x*')
+            ->save();
+            return true;
+        }catch(\Exception $e){
+            //echo $e->getMessage();
+            return false;
+        }
+        
+    }
+
+    public static function append($client_path, $file, $data){
+    
+        $file = '../files_to_upload/'.$client_path.'/'.$file;
+        $data = base64_decode($data);
+        return file_exists($file) && file_put_contents($file, $data, FILE_APPEND);
+    
+    }
+
+    public static function commit($hashId, $mime, $client_path){
+        
+        if(_exec("UPDATE file_client SET ghost = 0 WHERE hash_file = '$hashId'")){
+            
+            $slugFile = $hashId.".".$mime;
+            
+            $pathFile = '../files_to_upload/'.$client_path.'/'.$slugFile;
+            $objthis  = new FileManager($client_path, $hashId, $mime);
+
+            return $objthis->create_thumb 
+            ? $objthis->create_thumbnail($slugFile, $pathFile)
+            : true; 
+            
+        }
+
+        return false;
     }
 
 
