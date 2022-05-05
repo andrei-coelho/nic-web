@@ -25,7 +25,8 @@ class UserClient extends User {
         $user_master,
         $client_slug,
         $client_path,
-        $client_id
+        $client_id,
+        $max_byte
         ) {
             $this->id      = $id;
             $this->nome    = $nome;
@@ -41,6 +42,7 @@ class UserClient extends User {
             $this->client_id    = $client_id;
             $this->client_path  = $client_path;
             $this->isClient     = true;
+            $this->max_byte     = $max_byte;
 
     }
 
@@ -50,6 +52,21 @@ class UserClient extends User {
             "client_slug"  => $this->client_slug,
             "client_id"    => $this->client_id,
             "client_path"  => $this->client_path,
+            "max_byte"     => $this->max_byte,
         ];
+    }
+
+    public function getTotalBytes(){
+        $total = _query(
+            "SELECT 
+                    SUM(file_client_info.size_bytes) as total
+                FROM file_client_info
+                JOIN file_client ON file_client_info.file_client_id = file_client.id
+                JOIN directory ON directory.id = file_client.directory_id
+            WHERE 
+                file_client.ghost = 0 AND
+                directory.client_id = $this->client_id;"
+        )->fetchAssoc()['total'];
+        return $total;
     }
 }

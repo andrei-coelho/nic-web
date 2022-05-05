@@ -21,18 +21,19 @@ class UserFactory extends User {
         $userSel =
         _query(
             "SELECT 
-                user.id            as user_id,
-                user.ativo         as user_ativo,
-                user.nome          as user_nome,
-                user.email         as user_email,
-                user.slug          as user_slug,
-                client.id          as client_id,
-                client.ativo       as client_ativo,
-                client.slug        as client_slug,
-                client.nome        as client_nome,
-                directory.hash_dir as client_path,
-                user_client.master as user_master,
-                session.expire     as session_expire,
+                user.id                    as user_id,
+                user.ativo                 as user_ativo,
+                user.nome                  as user_nome,
+                user.email                 as user_email,
+                user.slug                  as user_slug,
+                client.id                  as client_id,
+                client.ativo               as client_ativo,
+                client.slug                as client_slug,
+                client.nome                as client_nome,
+                directory.hash_dir         as client_path,
+                client_path.max_byte_cloud as max_byte,
+                user_client.master         as user_master,
+                session.expire             as session_expire,
                 user.admin,
                 (case when(session.expire < '$hoje') THEN 0 ELSE 1 END) as valid_session
             FROM user 
@@ -85,7 +86,8 @@ class UserFactory extends User {
                         $userRow['user_master'],
                         $userRow['client_slug'],
                         $userRow['client_path'],
-                        $userRow['client_id']
+                        $userRow['client_id'],
+                        $userRow['max_byte']
                     );
         
         self::$user->upgradeSession();

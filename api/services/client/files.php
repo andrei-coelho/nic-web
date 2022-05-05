@@ -12,6 +12,7 @@ ini_set('display_errors', 0);
 use  libs\app\FileManager as file;
 use  libs\app\DropBox as dropbox;
 
+include "_upload_file.php";
 
 function _get_client_path($client_id){
     $pathSel = _query(
@@ -90,6 +91,19 @@ function _gen_link($file, $client_path, $client_id = 0){
         $link = _url()."download/".$user->session().'/'.$client_path."/".$file['hashId'].".".$file['ext'];
 
     return $link;
+}
+
+/**
+ * @function:get_files_info
+ * @pool:manage_files
+ */
+
+function get_files_info(){
+    $user = _user();
+    return _response([
+        "used" => $user->getTotalBytes(),
+        "max"  => $user->getClientArray()['max_byte']
+    ]);
 }
 
 /**
@@ -356,8 +370,8 @@ function get_tags($hash_file, $client_id = 0){
 
     $sel = _query(
     "SELECT 
-            file_client_tag.id as tag_id,
-            file_client_tag.nome
+             file_client_tag.id as tag_id,
+             file_client_tag.nome
         FROM file_client_tag
         JOIN file_client ON file_client_tag.file_client_id = file_client.id
         JOIN directory ON directory.id = file_client.directory_id
@@ -504,8 +518,23 @@ function file_info($hash_file, $client_id = 0){
 
 }
 
-function update_file(){
+/**
+ * @function:edit_dir_name
+ * @pool:manage_files
+ */
+function edit_dir_name($dir_name, $hash_dir, $client_id = 0){
     
+    $user = _user();
+
+    if($user->is_client()){
+        $client_id = $user->getClientArray()['client_id'];
+    }
+
+    if(!_exec("UPDATE directory 
+    SET nome = '$dir_name'
+    WHERE hash_dir = '$hash_dir' AND client_id = $client_id"))
+        _error(404, 'Esta pasta não existe.');
+
 }
 
 
@@ -531,35 +560,13 @@ function save_file($name, $mime, $file, $flag, $hashId = "", $hash_dir = "", $cl
     if(!($dirId = _is_client_folder($hash_dir, $client_id))) 
         _error(401, "Não autorizado");
 
-    include "_upload_file.php";
+    
 
-    if($flag == 'save'  ) return __upload_save($user, $name, $mime, $file, $client_path, $dirId);
-    if($flag == 'create') return __upload_create($client_path, $name, $mime, $dirId);
+    if($flag == 'save'  ) return __upload_save  ($user, $name, $mime, $file, $client_path, $dirId);
+    if($flag == 'create') return __upload_create($user, $client_path, $name, $mime, $dirId);
     if($flag == 'append') return __upload_append($client_path, $hashId.".".$mime, $file);
     if($flag == 'commit') return __upload_commit($user, $hashId, $mime, $client_path);
 
-}
-
-function _get_thumb($session, $ext, $client_path, $hashId){
-    
-    $icon = "public/img/icons/$ext.jpg";
-    $file = false;
-    if(in_array($ext, ['jpg', 'png', 'jpeg'])){
-        
-        if(file_exists('../thumbs/'.$client_path.'/'. $hashId.'.'.$ext)){
-            $file = _url().'thumbnail/'.$session.'/'.$client_path.'/'. $hashId.'.'.$ext;
-        }
-
-        if(file_exists('../thumbs/'.$client_path.'/'. $hashId.'..'.$ext)){
-            $file = _url().'thumbnail/'.$session.'/'.$client_path.'/'. $hashId.'..'.$ext;
-        }
-    }
-
-    return $file
-         ? $file
-         : (file_exists("../".$icon) 
-         ? _url().$icon 
-         : _url()."public/img/icons/default.jpg");
 }
 
 
@@ -621,8 +628,10 @@ function _get_list_files($hash_dir, $client_path){
         file_client.hash_file as hashId,
         file_client.mime_type as ext,
         file_client.public    as publico,
+        file_client_info.size_bytes as size,
         (CASE WHEN(true) THEN 'file' END) as `type`
         FROM  file_client 
+        JOIN  file_client_info ON file_client_info.file_client_id = file_client.id
         JOIN  directory ON directory.id = file_client.directory_id
         WHERE ghost = 0 AND directory.hash_dir = '$hash_dir'
         ORDER BY file_client.id DESC;
@@ -639,6 +648,7 @@ function _get_list_files($hash_dir, $client_path){
                 "hashId" => $file['hashId'],
                 "ext"    => ".".$file['ext'],
                 "type"   => $file['type'],
+                "size"   => $file['size'],
                 'novo'   => false,
                 'options'=> true,
                 'publico'=> $file['publico'] == 1
@@ -713,8 +723,10 @@ function list_public_files($hash_dir, $client_path){
         file_client.hash_file as hashId,
         file_client.mime_type as ext,
         file_client.public    as publico,
+        file_client_info.size_bytes as size,
         (CASE WHEN(true) THEN 'file' END) as `type`
         FROM  file_client 
+        JOIN  file_client_info ON file_client_info.file_client_id = file_client.id
         JOIN  directory ON directory.id = file_client.directory_id
         WHERE ghost = 0 
         AND directory.hash_dir = '$hash_dir'
@@ -733,8 +745,9 @@ function list_public_files($hash_dir, $client_path){
                 "hashId" => $file['hashId'],
                 "ext"    => ".".$file['ext'],
                 "type"   => $file['type'],
+                "size"   => $file['size'],
                 'novo'   => false,
-                'options'=> false,
+                'options'=> true,
                 'publico'=> $file['publico'] == 1
             ];
 
@@ -766,10 +779,12 @@ function _get_search_files($key_word, $client_id, bool $public = false){
             file_client.hash_file as hashId,
             file_client.mime_type as ext,
             file_client.public    as publico,
+            file_client_info.size_bytes as size,
             (CASE WHEN(true) THEN 'file' END) as `type`
-        FROM file_client
-            JOIN file_client_tag ON file_client_tag.file_client_id = file_client.id
-            JOIN  directory ON directory.id = file_client.directory_id
+            FROM  file_client 
+                JOIN  file_client_info ON file_client_info.file_client_id = file_client.id
+                JOIN  file_client_tag ON file_client_tag.file_client_id = file_client.id
+                JOIN  directory ON directory.id = file_client.directory_id
             WHERE ghost = 0 
                 $strPublic
                 AND directory.client_id = $client_id
@@ -812,6 +827,7 @@ function search_public_files($key_word, $client_id = 0){
                 "hashId" => $file['hashId'],
                 "ext"    => ".".$file['ext'],
                 "type"   => $file['type'],
+                "size"   => $file['size'],
                 'novo'   => false,
                 'options'=> false,
                 'publico'=> $file['publico'] == 1
@@ -858,6 +874,7 @@ function search_all_files($key_word, $client_id = 0){
                 "hashId" => $file['hashId'],
                 "ext"    => ".".$file['ext'],
                 "type"   => $file['type'],
+                "size"   => $file['size'],
                 'novo'   => false,
                 'options'=> true,
                 'publico'=> $file['publico'] == 1
