@@ -12,10 +12,12 @@ class FileService {
         $this->slug = $slug;
     }
 
-    public function setFunction(string $slug, array $pool){
+    public function setFunction(string $slug, array $pool, $template){
+        
         $this->functions[] = [
             "slug" => $slug,
             "pool" => $pool,
+            "template" => $template
         ];
     }
 
@@ -53,17 +55,29 @@ class FileService {
         $slugsFun = [];
 
         foreach ($this->functions as $fun) {
+            
             $slugFun = $fun['slug'];
             $funcId  = _exec("INSERT INTO service_function (slug, service_id) VALUES('$slugFun', $idService)", true);
+            
             foreach ($fun['pool'] as $pool_slug) {
                 $idPool = $poolsValue[$pool_slug];
                 _exec("INSERT INTO permission_func (permission_pool_id, service_function_id ) VALUES ($idPool, $funcId)");
             }
+
+            if($template = $fun['template'])
+                _exec("INSERT INTO 
+                    act_serv_func_reg(service_function_id, template)
+                    VALUES ($funcId, '$template')
+                ");
+
             $slugsFun[] = [
                 'name' => $slugFun,
-                'pools' => implode(',',$fun['pool'])
+                'pools' => implode(',',$fun['pool']),
+                'template' => $template
             ];
+
         }
+
         echo "Service: ".$this->slug. " commited <br> \n";
         echo "- Functions: <br> \n <pre>";
         print_r($slugsFun);

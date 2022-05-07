@@ -45,4 +45,8 @@ abstract class User {
     public function id(){
         return $this->id;
     }
+
+    public function slug(){
+        return $this->slug;
+    }
 }

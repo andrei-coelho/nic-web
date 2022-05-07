@@ -10,7 +10,10 @@ class UserClient extends User {
             $user_master,
             $client_slug,
             $client_path,
-            $client_id;
+            $template,
+            $user_ghost,
+            $client_id,
+            $service_id;
 
     public function __construct(
         $id,
@@ -26,7 +29,10 @@ class UserClient extends User {
         $client_slug,
         $client_path,
         $client_id,
-        $max_byte
+        $max_byte,
+        $template,
+        $user_ghost,
+        $service_function_id
         ) {
             $this->id      = $id;
             $this->nome    = $nome;
@@ -43,6 +49,9 @@ class UserClient extends User {
             $this->client_path  = $client_path;
             $this->isClient     = true;
             $this->max_byte     = $max_byte;
+            $this->template     = $template;
+            $this->user_ghost   = $user_ghost == 1;
+            $this->service_id   = $service_function_id;
 
     }
 
@@ -69,4 +78,18 @@ class UserClient extends User {
         )->fetchAssoc()['total'];
         return $total;
     }
+
+
+    public function service_function_used(){
+        return $this->service_id;
+    }
+
+    public function template(){
+        return $this->template;
+    }
+
+    public function is_ghost(){
+        return $this->user_ghost;
+    }
+
 }

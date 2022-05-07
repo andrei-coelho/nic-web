@@ -34,7 +34,11 @@ use libs\app\ResponseFactory as ResponseFactory;
     || !function_exists($request->vars['func']))
         _error(404, 'Not Found');
     
+    include "../api/helpers/activity.php";
+
     echo (ResponseFactory::genResponseByFunc($request->vars['func']))->response();
+    
+    include "../api/activities.php";
     
 })();
 

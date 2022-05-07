@@ -75,6 +75,7 @@ function refresh_user_client(){
 /**
  * @function:load_me
  * @pool:public
+ * @template: $user_slug conectou-se
  */
 function load_me(){
     
@@ -82,6 +83,10 @@ function load_me(){
 
     $user = _user();
     if(!$user) _error();
+
+    _activity([
+        "user_slug"=>$user->slug()
+    ]);
 
     $user_a = $user->to_array();
     if($user instanceof libs\app\user\UserClient){

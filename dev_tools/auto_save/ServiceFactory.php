@@ -7,7 +7,7 @@ use auto_save\FileService as File;
 class ServiceFactory {
 
     public static $files;
-    private static $regex = '/@(\w+):\s?([^\s]+)/';
+    private static $regex = '/@(\w+):\s?([^\r\n]+)/';
 
     private function __construct(){}
 
@@ -70,21 +70,25 @@ class ServiceFactory {
 
             $slug = false;
             $pool = [];
+            $template = false;
 
             foreach ($res[1] as $k => $chave) {
+                
                 if($chave == "function"){
                     if(!$slug) $slug = $res[2][$k];
-                    continue;
                 }
                 if($chave == "pool"){
                     $pool = explode(',', $res[2][$k]);
-                    break;
+                }
+                if($chave == "template"){
+                    if(!$template) $template = $res[2][$k];
                 }
             }
-
-            $obj->setFunction($slug, $pool);
+            
+            $obj->setFunction($slug, $pool, $template);
         }
 
+        
     }
 
 }
