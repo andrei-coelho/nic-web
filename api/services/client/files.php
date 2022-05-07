@@ -715,7 +715,15 @@ function publish_file ($hash_file, int $val, $client_id = 0){
  * @function: list_public_files
  * @pool:manage_files,files_basic
  */
-function list_public_files($hash_dir, $client_path){
+function list_public_files(){
+
+    $user = _user();
+
+    if($user->is_client()){
+        $client_arr  = $user->getClientArray();
+        $client_path = $client_arr['client_path'];
+        $client_id   = $client_arr['client_id'];
+    } 
 
     $filesSel = _query(
         "SELECT 
@@ -729,7 +737,7 @@ function list_public_files($hash_dir, $client_path){
         JOIN  file_client_info ON file_client_info.file_client_id = file_client.id
         JOIN  directory ON directory.id = file_client.directory_id
         WHERE ghost = 0 
-        AND directory.hash_dir = '$hash_dir'
+        AND directory.client_id = '$client_id'
         AND file_client.public = 1
         ORDER BY file_client.id DESC;
     ");
@@ -747,7 +755,7 @@ function list_public_files($hash_dir, $client_path){
                 "type"   => $file['type'],
                 "size"   => $file['size'],
                 'novo'   => false,
-                'options'=> true,
+                'options'=> false,
                 'publico'=> $file['publico'] == 1
             ];
 
