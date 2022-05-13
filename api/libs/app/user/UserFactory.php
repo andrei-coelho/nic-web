@@ -26,6 +26,7 @@ class UserFactory extends User {
                 user.nome                  as user_nome,
                 user.email                 as user_email,
                 user.slug                  as user_slug,
+                user.ghost_id              as user_ghost_id,
                 client.id                  as client_id,
                 client.ativo               as client_ativo,
                 client.slug                as client_slug,
@@ -76,6 +77,7 @@ class UserFactory extends User {
             $userRow['user_email'],
             $session,
             $userRow['session_expire'],
+            $userRow['user_ghost_id'],
             $valid
         ) 
         : new UserClient(

@@ -65,3 +65,41 @@ function update_client(int $client_id, $nome, $slug, int $size){
 
     return _response([], "Dados atualizados com sucesso!");
 }
+
+function open_ghost_session(int $client_id){
+
+    $user     = _user();    
+    $userId   = $user->id;
+    $id_ghost = $user->ghostId();
+    
+    if(!$id_ghost){
+        $slug = 'ghost@'._unique_hash('ghost'.$userId);
+        $id_ghost = _exec("INSERT INTO user (nome, slug, email, senha, ativo) 
+                VALUE ('Ghost', '$slug', '$slug', 'no-pass', 1)", true);
+        _exec("UPDATE user SET ghost_id = $id_ghost WHERE id = $userId");
+    }
+
+    $sess   = _gen_session($userId);
+    $hoje   =  date("Y-m-d H:i:s");
+    $expire =  date('Y-m-d H:i:s', strtotime($hoje. ' + 2 days'));
+
+    _exec("UPDATE session SET ativo = 0 WHERE user_id = $id_ghost");
+
+    if(!_exec("INSERT 
+        INTO session (user_id, hash, expire, ativo) 
+        VALUES($id_ghost, '$sess', '$expire', 1)")) 
+    _error(500, 'Server problem');
+
+    $query = _query("SELECT id FROM user_client WHERE user_id = $id_ghost");
+    if($query->rowCount() == 0){
+        _exec(
+            "INSERT INTO user_client(user_id, client_id, master, ghost)
+            VALUES ($id_ghost, $client_id, 1, 1) ");
+    } else {
+        $user_client_id = $query->fetchAssoc()['id'];
+        _exec("UPDATE user_client SET client_id = $client_id WHERE id = $user_client_id");
+    }
+
+    return _response(["session"=>$sess]);
+
+}
