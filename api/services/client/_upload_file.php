@@ -13,8 +13,6 @@ function ___can_save_file($user, $file){
     $client_id = $client['client_id'];
     $max_byte  = $client['max_byte'];
 
-   
-
     return strlen($file) + $total <= $max_byte;
 }
 
