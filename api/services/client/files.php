@@ -217,50 +217,7 @@ function delete_file($hash_file, $type, $client_id = 0){
         
     if($type == 'dir'){
         
-        $dirsQ  = _query("SELECT directory.id, directory.hash_dir, directory.directory_id FROM directory WHERE client_id = $client_id");
-        $dirs   = $dirsQ->fetchAllAssoc();
-        $dirIdx = false;
-        $ids    = [];
-        
-        foreach ($dirs as $dir) {
-            if($dir['hash_dir'] ==$hash_file){
-                $dirIdx = true;
-                $ids[]  = $dir['id'];
-                break;
-            }
-        }
-        
-        $continue = 1;
-        if($dirIdx)
-        while($continue > 0){
-            $continue = 0;
-            foreach ($dirs as $dir) {
-                if(in_array($dir['directory_id'], $ids) && !in_array($dir['id'], $ids)){
-                    $ids[] = $dir['id'];
-                    $continue++;
-                }
-            }
-        }
-        // pegar todos os arquivos dos diretórios
-        $indirs = implode(',', $ids);
-        $sfiles = _query(
-            "SELECT 
-                    file_client.id, 
-                    file_client.hash_file, 
-                    file_client.dropbox_hash_id, 
-                    file_client.saved, 
-                    file_client.mime_type
-               FROM file_client 
-               JOIN directory   ON directory.id = file_client.directory_id 
-              WHERE 
-              file_client.directory_id IN (".$indirs.")");
-        _exec("DELETE FROM directory WHERE id IN (".$indirs.")");
-        if($sfiles->rowCount() > 0){
-            $files = $sfiles->fetchAllAssoc();
-            foreach ($files as $file) {
-                _remove_file($client_path,$file,$dropbox_tk_id);
-            }
-        }
+        _remove_dir($client_id, $hash_file, $client_path, $dropbox_tk_id);
 
     } else {
 
@@ -283,6 +240,54 @@ function delete_file($hash_file, $type, $client_id = 0){
         }
     }
 
+}
+
+function _remove_dir($client_id, $hash_file, $client_path, $dropbox_tk_id){
+    
+    $dirsQ  = _query("SELECT directory.id, directory.hash_dir, directory.directory_id FROM directory WHERE client_id = $client_id");
+    $dirs   = $dirsQ->fetchAllAssoc();
+    $dirIdx = false;
+    $ids    = [];
+    
+    foreach ($dirs as $dir) {
+        if($dir['hash_dir'] == $hash_file){
+            $dirIdx = true;
+            $ids[]  = $dir['id'];
+            break;
+        }
+    }
+    
+    $continue = 1;
+    if($dirIdx)
+    while($continue > 0){
+        $continue = 0;
+        foreach ($dirs as $dir) {
+            if(in_array($dir['directory_id'], $ids) && !in_array($dir['id'], $ids)){
+                $ids[] = $dir['id'];
+                $continue++;
+            }
+        }
+    }
+    // pegar todos os arquivos dos diretórios
+    $indirs = implode(',', $ids);
+    $sfiles = _query(
+        "SELECT 
+                file_client.id, 
+                file_client.hash_file, 
+                file_client.dropbox_hash_id, 
+                file_client.saved, 
+                file_client.mime_type
+            FROM file_client 
+            JOIN directory   ON directory.id = file_client.directory_id 
+            WHERE 
+            file_client.directory_id IN (".$indirs.")");
+    _exec("DELETE FROM directory WHERE id IN (".$indirs.")");
+    if($sfiles->rowCount() > 0){
+        $files = $sfiles->fetchAllAssoc();
+        foreach ($files as $file) {
+            _remove_file($client_path,$file,$dropbox_tk_id);
+        }
+    }
 }
 
 

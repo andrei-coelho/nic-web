@@ -8,8 +8,17 @@ function list_clients(){
 
 }
 
+function bloquear(int $client_id){
+    if(!_exec("UPDATE client SET ativo = 0 WHERE id = $client_id"))
+        _error(500, 'server error');
+}
 
-function get_info($client_id){
+function ativar(int $client_id){
+    if(!_exec("UPDATE client SET ativo = 1 WHERE id = $client_id"))
+        _error(500, 'server error');
+}
+
+function get_info(int $client_id){
     $query = _query(
     "SELECT 
     (
@@ -101,5 +110,30 @@ function open_ghost_session(int $client_id){
     }
 
     return _response(["session"=>$sess]);
+
+}
+
+function exluir(int $client_id){
+
+    $query =  _query(
+        "SELECT 
+              dropbox_tk.id,
+              directory.hash_dir
+        FROM  dropbox_tk 
+        JOIN  client_path ON dropbox_tk_id = dropbox_tk.id 
+        JOIN  directory   ON directory.id = client_path.directory_id
+        WHERE client_path.client_id = $client_id
+    ");
+    if($query->rowCount() == 0) _error();
+    
+    $response = $query->fetchAssoc();
+    $token_id = $response['id'];
+    $hash_dir = $response['hash_dir'];
+
+    include "../api/services/client/files.php";
+
+    _remove_dir($client_id, $hash_dir, $hash_dir, $token_id);
+    _exec("DELETE FROM client WHERE client.id = $client_id");
+    rmdir('../files_to_upload/'.$hash_dir.'/');
 
 }
