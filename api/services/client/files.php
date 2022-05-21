@@ -95,7 +95,7 @@ function _gen_link($file, $client_path, $client_id = 0){
 
 /**
  * @function:get_files_info
- * @pool:manage_files
+ * @pool:arquivos_full
  */
 
 function get_files_info(){
@@ -108,7 +108,7 @@ function get_files_info(){
 
 /**
  * @function:get_public_link
- * @pool:manage_files,files_basic
+ * @pool:arquivos_full,arquivos_basico
  */
 function get_public_link($hash_file, $client_id = 0){
 
@@ -130,7 +130,7 @@ function get_public_link($hash_file, $client_id = 0){
 
 /**
  * @function:get_link
- * @pool:manage_files
+ * @pool:arquivos_full
  */
 function get_link($hash_file, $client_id = 0){
     
@@ -153,7 +153,7 @@ function get_link($hash_file, $client_id = 0){
 
 /**
  * @function:move_file
- * @pool:manage_files
+ * @pool:arquivos_full
  */
 function move_file($hash_file, $hash_dir, $client_id = 0){
     
@@ -202,7 +202,7 @@ function move_file($hash_file, $hash_dir, $client_id = 0){
 
 /**
  * @function: delete_file
- * @pool:manage_files
+ * @pool:arquivos_full
  */
 function delete_file($hash_file, $type, $client_id = 0){
     
@@ -324,7 +324,7 @@ function _get_dropbox_tk_id($client_id){
 
 /**
  * @function:edit_file_name
- * @pool:manage_files
+ * @pool:arquivos_full
  */
 function edit_file_name($hash_file, $nome, $client_id = 0){
     $user =  _user();
@@ -343,7 +343,7 @@ function edit_file_name($hash_file, $nome, $client_id = 0){
 
 /**
  * @function:create_ghost_file
- * @pool:manage_files
+ * @pool:arquivos_full
  */
 function create_ghost_file($hash_dir, $client_id = 0){
     
@@ -364,7 +364,7 @@ function create_ghost_file($hash_dir, $client_id = 0){
 
 /**
  * @function:get_tags
- * @pool:manage_files
+ * @pool:arquivos_full
  */
 function get_tags($hash_file, $client_id = 0){
     
@@ -390,7 +390,7 @@ function get_tags($hash_file, $client_id = 0){
 
 /**
  * @function:remove_tag
- * @pool:manage_files
+ * @pool:arquivos_full
  */
 function remove_tag($tag_id, $client_id = 0){
     $user = _user();
@@ -405,7 +405,7 @@ function remove_tag($tag_id, $client_id = 0){
 
 /**
  * @function:add_tag
- * @pool:manage_files
+ * @pool:arquivos_full
  */
 function add_tag($hash_file, $tag, $client_id = 0){
 
@@ -440,7 +440,7 @@ function add_tag($hash_file, $tag, $client_id = 0){
 
 /**
  * @function:add_folder
- * @pool:manage_files
+ * @pool:arquivos_full
  */
 function add_folder($name, $hash_dir = "", $client_id = 0){
 
@@ -486,7 +486,7 @@ function add_folder($name, $hash_dir = "", $client_id = 0){
 
 /**
  * @function:file_info
- * @pool:manage_files
+ * @pool:arquivos_full
  */
 function file_info($hash_file, $client_id = 0){
     
@@ -525,7 +525,7 @@ function file_info($hash_file, $client_id = 0){
 
 /**
  * @function:edit_dir_name
- * @pool:manage_files
+ * @pool:arquivos_full
  */
 function edit_dir_name($dir_name, $hash_dir, $client_id = 0){
     
@@ -546,7 +546,7 @@ function edit_dir_name($dir_name, $hash_dir, $client_id = 0){
 
 /**
  * @function:save_file
- * @pool:manage_files
+ * @pool:arquivos_full
  */
 function save_file($name, $mime, $file, $flag, $hashId = "", $hash_dir = "", $client_id = 0){
     
@@ -577,7 +577,7 @@ function save_file($name, $mime, $file, $flag, $hashId = "", $hash_dir = "", $cl
 
 /**
  * @function:list_all_folders
- * @pool:manage_files
+ * @pool:arquivos_full
  */
 
  function list_all_folders($hash_dir = "", $client_id = 0){
@@ -599,7 +599,7 @@ function save_file($name, $mime, $file, $flag, $hashId = "", $hash_dir = "", $cl
 
 /**
  * @function: list_all_files
- * @pool:manage_files
+ * @pool:arquivos_full
  */
 function list_all_files($hash_dir = "", $client_id = 0){
 
@@ -689,7 +689,7 @@ function _get_list_folder($hash_dir, $client_id){
 
 /**
  * @function: publish_file
- * @pool:manage_files
+ * @pool:arquivos_full
  */
 function publish_file ($hash_file, int $val, $client_id = 0){
     
@@ -718,7 +718,7 @@ function publish_file ($hash_file, int $val, $client_id = 0){
 
 /**
  * @function: list_public_files
- * @pool:manage_files,files_basic
+ * @pool:arquivos_full,arquivos_basico
  */
 function list_public_files(){
 
@@ -811,7 +811,7 @@ function _get_search_files($key_word, $client_id, bool $public = false){
 
 /**
  * @function: search_public_files
- * @pool:manage_files,files_basic
+ * @pool:arquivos_full,arquivos_basico
  */
 
 function search_public_files($key_word, $client_id = 0){
@@ -858,7 +858,7 @@ function search_public_files($key_word, $client_id = 0){
 
  /**
  * @function: search_all_files
- * @pool:manage_files
+ * @pool:arquivos_full
  */
 
 function search_all_files($key_word, $client_id = 0){

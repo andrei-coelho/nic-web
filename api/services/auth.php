@@ -27,11 +27,11 @@ function logar($email, $senha){
 
     if($userSel->rowCount() == 0) _error(404, 'O email está errado, não foi cadastrado ou está bloqueado');
     $user = $userSel->fetchAssoc();
-    // $status = password_verify($senha, $user['senha']);
-    $status = $senha == $user['senha']; // apagar depois
-    $user_id = $user['id'];
-   
+    $status = password_verify($senha, $user['senha']);
+
     if(!$status) _error(404, 'A senha enviada não é a mesma cadastrada');
+    
+    $user_id = $user['id'];
 
     if(!_exec("UPDATE 
         session SET ativo = 0 
@@ -40,8 +40,7 @@ function logar($email, $senha){
    
     $hoje   =  date("Y-m-d H:i:s");
     $expire =  date('Y-m-d H:i:s', strtotime($hoje. ' + 2 days'));
-    $sess   = _gen_human_session($email); // usar o debaixo em produção
-    // $sess   = _gen_session($user_id);
+    $sess   = _gen_session($user_id);
    
     if(!_exec("INSERT 
         INTO session (user_id, hash, expire, ativo) 
@@ -158,4 +157,4 @@ function load_me(){
 
     return _response($response);
 
-}
+}   
