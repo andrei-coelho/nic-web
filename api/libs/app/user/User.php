@@ -30,6 +30,17 @@ abstract class User {
         ];
     }
 
+    public function getPermissions(){
+        return _query(
+            "SELECT 
+                    permission_pool.slug
+               FROM 
+                    user_permission 
+               JOIN permission_pool ON user_permission.permission_pool_id = permission_pool.id
+              WHERE user_permission.user_id = ".$this->id)
+        ->fetchAllAssoc();
+    }
+
     public function isValidSession(){
         return $this->valid;
     }

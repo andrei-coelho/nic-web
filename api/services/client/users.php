@@ -31,6 +31,36 @@ function _set_all_permissions($userId){
 
 }
 
+/**
+  * @function: list_all
+  * @pool:contas_basico,administrar_contas
+  */
+function list_all(){
+    
+    $user  = _user();
+    $clid  = $user->getClientArray()['client_id'];
+    
+    $query = _query(
+        "SELECT 
+            user.nome,
+            user.slug,
+            user.email,
+            user.cargo,
+            user.telefone
+        FROM 
+            user JOIN user_client ON user_client.user_id = user.id
+        WHERE 
+            user_client.client_id = $clid AND NOT user_client.ghost = 1
+        ORDER BY user.nome ASC
+    ");
+
+    return _response([
+        "is_editor" => in_array('administrar_contas', array_column($user->getPermissions(), 'slug')),
+        "list"      => $query->fetchAllAssoc()
+    ]);
+    
+}
+
 
  /**
   * @function: create_client_user
@@ -39,14 +69,12 @@ function _set_all_permissions($userId){
 function create_client_user($nome, $email, int $client_id, int $master = 0){
     
     $pass    = _gen_pass($email);
-    
     $select  = _query("SELECT slug FROM client WHERE id = $client_id");
     
     if($select->rowCount() == 0) _error(404, 'Cliente não existe');
     
     $slugCli = $select->fetchAssoc()['slug'];
     $slug    = _slug($nome, "-")."@".$slugCli;
-
     $id      = _create_user($nome, $slug, $email, $encpass, 0, 0);
 
     if(!_exec("INSERT INTO 
