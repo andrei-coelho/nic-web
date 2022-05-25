@@ -27,8 +27,8 @@ function logar($email, $senha){
 
     if($userSel->rowCount() == 0) _error(404, 'O email está errado, não foi cadastrado ou está bloqueado');
     $user = $userSel->fetchAssoc();
-    $status = $user['senha'] == $senha;
-    //$status = password_verify($senha, $user['senha']);
+    //$status = $user['senha'] == $senha;
+    $status = password_verify($senha, $user['senha']);
     //http://localhost:3000/accounts@add_user
     if(!$status) _error(404, 'A senha enviada não é a mesma cadastrada');
     
@@ -105,7 +105,6 @@ function load_me(){
     ]);
 
     $user_a = $user->to_array();
-    $response['user'] = $user_a;
 
     if($user instanceof libs\app\user\UserClient){
         $clie_a = $user->getClientArray();
@@ -156,6 +155,7 @@ function load_me(){
         $response['pages'] = array_values($pagesArray);
     }
 
+    $response['user'] = $user_a;
     return _response($response);
 
 }   
