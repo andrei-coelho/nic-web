@@ -159,3 +159,47 @@ function load_me(){
     return _response($response);
 
 }   
+
+/**
+ * @function:get_me
+ * @pool:public
+ */
+
+function get_me(){
+    $user = _user();
+    if(!$user) _error();
+    return _response($user->to_array());
+}
+
+
+/**
+ * @function:change_me
+ * @pool:public
+ */
+
+ function change_me($nome, $oldPass = "", $newPass = ""){
+
+    sleep(1);
+
+    $user = _user();
+    if(!$user) _error();
+    $id = $user->id;
+
+    if($oldPass == ""){
+        if(!_exec("UPDATE user SET nome = '$nome' WHERE id = $id"))
+            _error(500, 'server error');
+        return;
+    }
+    
+    $query = _query("SELECT senha FROM user WHERE id = $id");
+    if($query->rowCount() == 0) _error();
+    $senha = $query->fetchAssoc()['senha'];
+   
+    if(!password_verify($oldPass, $senha)) _error(500, "Senha incorreta!");
+
+    $passEnc = password_hash($newPass, PASSWORD_DEFAULT);
+    
+    if(!_exec("UPDATE user SET nome = '$nome', senha = '$passEnc' WHERE id = $id"))
+         _error(500, 'server error');
+
+ }

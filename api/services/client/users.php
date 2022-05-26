@@ -31,7 +31,7 @@ function _set_permissions($permissions, $userId, $clean = true) {
         $insert .= "(".(isset($permission['id']) ? $permission['id'] : $permission[0]).", $userId),";
     $insert = substr($insert, 0, -1).";";
     
-    if(!_exec($insert)) _error();
+    if(!_exec($insert)) _error(500, 'Não foi possível inserir as permissões');
 
 }
 
@@ -61,10 +61,11 @@ function set_permissions(array $permissions, int $user_id){
         FROM user 
         JOIN user_client ON user_client.user_id = user.id 
         WHERE user.id = $user_id AND user_client.client_id = $clid")
-    ->rowCount()==0) _error(401);
+    ->rowCount()==0) _error(401, "Não autorizado");
 
     _set_pattern_permissions($user_id);
-    _set_permissions($permissions, $user_id, false);
+    if(count($permissions) > 0)
+        _set_permissions($permissions, $user_id, false);
     
 }
 
@@ -160,20 +161,15 @@ function create_client_user($nome, $email, $cargo, $telefone, int $master){
     $user    = _user();
     $usera   = $user->getClientArray();
     $clid    = $usera['client_id'];
+    $clislug = $usera['client_slug'];
 
     $pass    = _gen_pass($email);
-    $select  = _query("SELECT slug FROM client WHERE id = $clid");
-    
-    if($select->rowCount() == 0) 
-        _error(404, 'Cliente não existe');
-    
-    $slugCli = $select->fetchAssoc()['slug'];
-    $slug    = _slug($nome)."@".$slugCli;
-    $id      = _create_user($nome, $slug, $email, $pass, 0, 0);
+    $slug    = _slug($nome)."@".$clislug;
+    $id      = _create_user($nome, $slug, $email, $pass,  $telefone, $cargo, 0, 0);
 
     if(!_exec("INSERT INTO 
         user_client (user_id, client_id, master, ghost)
-        VALUES ($id, $client_id, $master, 0)
+        VALUES ($id, $clid, $master, 0)
     ")) _error(500, 'server error 1');
 
     if($master == 1){
@@ -182,15 +178,10 @@ function create_client_user($nome, $email, $cargo, $telefone, int $master){
         _set_pattern_permissions($id);
     }
 
-    _exec("UPDATE user SET ativo = 1 WHERE id = $id");
+    if(!_exec("UPDATE user SET ativo = 1 WHERE id = $id"))
+        _error(500, "server error 2");
 
-    return _response([
-        "nome"   => $nome,
-        "email"  => $email,
-        "slug"   => $slug,
-        "senha"  => $pass,
-        "master" => $master
-    ]);
+    return _response(["pass"  => $pass]);
 
 }
 
