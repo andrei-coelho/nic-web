@@ -18,7 +18,7 @@ function _clean_value($value, $type = 'mixed'){
 
 function _slug($text, $divider = '-'){
     
-    $text = preg_replace('/[\t\n]/', ' ', $text);
+    $text = preg_replace('/[-_\t\n]/', ' ', $text);
     $text = preg_replace('/\s{2,}/', ' ', $text);
     
     $list = [
