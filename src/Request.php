@@ -34,8 +34,8 @@ class Request {
         if($type == 'array'){
             if(!is_array($value)) return [self::clean_value($value)];
             $valueFinal = [];
-            foreach ($value as $v) {
-                $valueFinal[] = is_array($v) ? self::clean_value($v, 'array') : self::clean_value($v);
+            foreach ($value as $k => $v) {
+                $valueFinal[$k] = is_array($v) ? self::clean_value($v, 'array') : self::clean_value($v);
             }
             return $valueFinal;
         }
