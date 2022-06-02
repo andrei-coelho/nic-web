@@ -9,7 +9,6 @@ Route::register('admin@permissions', 'admin/permissions');
 
 #!
 Route::register('@auth', 'auth');
-Route::register('client@pesquisas_estatistica', 'client/_pesquisas_estatistica');
 Route::register('client@files', 'client/files');
 Route::register('client@pesquisas', 'client/pesquisas');
 Route::register('client@users', 'client/users');

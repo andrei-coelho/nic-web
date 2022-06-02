@@ -4,6 +4,197 @@
  * @service: pesquisas
  */
 
+function _prefix_table($slug){
+    switch ($slug) {
+        case 'data'  : return 'user_resposta.data_resposta';
+        default: 
+            return 
+            in_array($slug, ['idade', 'casado', 'sexo', 'filhos', 'genero', 'cor', 'renda_mensal']) ?
+            "user_resposta_profile.$slug" : 
+            "";
+    }
+}
+
+function _fix_value($value){
+    if(is_string($value)) return "'$value'";
+    if(is_bool($value)) return $value ? 1 : 0;
+    return $value;
+}
+
+/**
+ * @function: estatistica_perfil
+ * @pool: pesquisas_full
+ */
+function estatistica_perfil(int $pesquisa_id, string $field){
+
+    _is_pesquisa_cliente($pesquisa_id);
+
+    try {
+        $query = _query(
+        "SELECT 
+            user_r.$field,
+            count(user_r.id) as total_$field
+            FROM (
+                SELECT user_resposta_profile.id, user_resposta_profile.$field
+                  FROM user_resposta_profile
+                  JOIN user_resposta ON user_resposta.id = user_resposta_profile.user_resposta_id
+                 WHERE user_resposta.pesquisa_id = $pesquisa_id 
+               AND NOT user_resposta_profile.$field = null
+            ) as user_r
+        GROUP BY user_r.$field;");
+
+        return _response($query->fetchAllAssoc());
+
+    } catch (\Exception $e){
+        _error();
+    }
+
+}
+
+/**
+ * @function: estatistica_votos
+ * @pool: pesquisas_full
+ */
+function estatistica_votos(int $pesquisa_id, array $filters = []){
+
+    _is_pesquisa_cliente($pesquisa_id);
+
+    /**
+     * 
+     * se existir 'equals' ele será usado. 
+     * Se não existir ou 'equals' for 'false', 
+     * o algoritmo irá procura pelo 'range'.
+     * Se ambos não existirem, retorna erro.
+     * 
+     * Exemplo:
+     *  {
+     *     field:'name',
+     *     equals:'value',
+     *     range:{               
+     *         min:'value',
+     *         max:'value'
+     *     }
+     *  }
+     */
+
+    $filterStr = "";
+
+    foreach ($filters as $filter) {
+        
+        $filterStr .= " AND ";
+        $prefix = _prefix_table($filter['field']);
+
+        if(isset($filter['equals'])){
+            $filterStr .= $prefix." = ". _fix_value($filter['equals']);
+            continue;
+        }
+
+        if(isset($filter['min'])){
+            $filterStr .= $prefix." >= ". _fix_value($filter['min']);
+            continue;
+        }
+
+        if(isset($filter['max'])){
+            $filterStr .= $prefix." <= ". _fix_value($filter['max']);
+            continue;
+        }
+       
+        if(isset($filter['range'])){
+            if(!isset($filter['range']['min']) || !isset($filter['range']['min'])) 
+                _error();
+            $filterStr .= 
+                "$prefix >= ". _fix_value($filter['range']['min']).
+                " AND ".
+                "$prefix <= ". _fix_value($filter['range']['max']);
+            continue;
+        }
+
+        _error();
+    }
+
+    $query = 
+        "SELECT 
+            (SELECT 
+                count(user_resposta.id) as total_resposta 
+                FROM user_resposta 
+                LEFT JOIN user_resposta_profile ON user_resposta_profile.user_resposta_id = user_resposta.id
+                WHERE user_resposta.pesquisa_id = $pesquisa_id
+                $filterStr
+            ) as total_pessoas,
+            count(*) as votos_option, 
+            respostas.option_id, 
+            respostas.pergunta_id
+        FROM (
+            SELECT  
+                options.id     as option_id,
+                pergunta.id    as pergunta_id
+            FROM resposta
+                 JOIN options       ON options.id = resposta.option_id 
+                 JOIN pergunta      ON pergunta.id = options.pergunta_id
+                 JOIN user_resposta ON user_resposta.id = resposta.user_resposta_id
+            LEFT JOIN user_resposta_profile ON user_resposta_profile.user_resposta_id = user_resposta.id
+            WHERE user_resposta.pesquisa_id = $pesquisa_id
+            $filterStr
+        ) as respostas 
+        GROUP BY respostas.option_id 
+        ORDER BY respostas.pergunta_id, respostas.option_id;
+    ";
+
+    $perguntasQuery = _query(
+        "SELECT 
+                options.valor      as option_valor,
+                options.id         as option_id,
+                pergunta.valor     as pergunta_valor,
+                pergunta.id        as pergunta_id,
+                pesquisa.titulo    as pesquisa_titulo,
+                pesquisa.createdAt as criado_em
+        FROM    options
+           JOIN pergunta ON pergunta.id = options.pergunta_id 
+           JOIN pesquisa ON pesquisa.id = pergunta.pesquisa_id
+        WHERE   pesquisa.id = $pesquisa_id AND pesquisa.ativo = 1;"
+    );
+
+    if(!$perguntasQuery || $perguntasQuery->rowCount() == 0 || !($estats = _query($query))) 
+        _error();
+
+    $perguntas = $perguntasQuery->fetchAllAssoc();
+    
+    $response = [
+        "total_pessoas" => 0,
+        "titulo"        => $perguntas[0]['pesquisa_titulo'],
+        "criado_em"     => date('d/m/Y', strtotime($perguntas[0]['criado_em'])),
+        "perguntas"     => []
+    ];
+
+    foreach ($perguntas as $pergunta) {
+        if(!isset($response['perguntas']["".$pergunta['pergunta_id']])){
+            $response['perguntas']["".$pergunta['pergunta_id']] = [
+                'valor'   => $pergunta['pergunta_valor'],
+                'options' => []
+            ];
+        }
+        $response['perguntas']["".$pergunta['pergunta_id']]['options']["".$pergunta['option_id']] = [
+            "valor" => $pergunta['option_valor'],
+            "votos" => 0
+        ];
+    }
+
+    if($estats ->rowCount() == 0) return _response($response);
+
+    $list  = $estats->fetchAllAssoc();
+    $first = true;
+    foreach ($list as $votos) {
+        if($first){
+            $response['total_pessoas'] = $votos['total_pessoas'];
+            $first = false;
+        }
+        $response['perguntas']["".$votos['pergunta_id']]['options']["".$votos['option_id']]['votos'] =  $votos['votos_option'];
+    }
+
+    return _response($response);
+
+}
+
 /**
  * @function:list_pesquisas
  * @pool:pesquisas_basico
