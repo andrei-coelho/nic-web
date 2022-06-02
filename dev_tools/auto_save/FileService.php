@@ -45,6 +45,8 @@ class FileService {
             $slugs .= " slug = '" .$slug. "' OR ";
         $slugs = substr( $slugs, 0, -4).";";
 
+        if($slugs == ";") return;
+
         $perm_q = _query("SELECT slug, id FROM permission_pool WHERE $slugs");
         $ids_pr = $perm_q->fetchAllAssoc();
         

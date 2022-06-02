@@ -4,11 +4,39 @@
  * @service: pesquisas
  */
 
-//function 
+/**
+ * @function:list_pesquisas
+ * @pool:pesquisas_basico
+ */
+function list_pesquisas(){
+
+    $user      = _user();
+    $client_id = $user->getClientArray()['client_id'];
+
+    $query = _query(
+        "SELECT
+            pesquisa.id,
+            pesquisa.titulo,
+            pesquisa.createdAt,
+            (
+                SELECT count(id) 
+                FROM user_resposta 
+                WHERE 
+                user_resposta.pesquisa_id = pesquisa.id
+                AND response = 1
+            ) as respostas_total
+        FROM pesquisa 
+        WHERE pesquisa.ativo = 1;
+    ");
+    if(!$query) _error();
+    return _response($query->fetchAllAssoc());
+    
+}
+
 
 /**
  * @function:get_new_user_resposta
- * @pool: pesquisas_basico
+ * @pool:pesquisas_basico
  */
 function get_new_user_resposta(int $pesquisa_id){
     // cria um user_resposta
@@ -24,7 +52,7 @@ function get_new_user_resposta(int $pesquisa_id){
 
 /**
  * @function:salvar_resposta
- * @pool: pesquisas_basico
+ * @pool:pesquisas_basico
  */
 function salvar_resposta(
         int $user_resposta_id, 
@@ -111,44 +139,38 @@ function _salvar_dados_cadastro(int $user_resposta_id, int $pesquisa_id, array $
 
 /**
  * @function:get_inputs_fields
- * @pool: pesquisas_basico
+ * @pool:pesquisas_basico
  */
 function get_inputs_fields(int $pesquisa_id){
-    // tabela user_resposta_cad_field
-    /*
-        EXEMPLO: 
-        $inputs = [
-            'id'    => 1,
-            'label' => 'E-mail',
-            'slug'  => 'email'
-        ];
 
-    */
     _is_pesquisa_cliente($pesquisa_id);
 
     $query = _query(
-        "SELECT
-                user_resposta_cad_field.id,
-                user_resposta_cad_field.label,
-                user_resposta_cad_field.slug
-        FROM 
-            user_resposta_cad_field 
-            JOIN pesquisa ON user_resposta_cad_field.pesquisa_id = pesquisa.id
-        WHERE pesquisa.id = $pesquisa_id
+        "SELECT id,label,slug
+        FROM user_resposta_cad_field WHERE pesquisa_id = $pesquisa_id
     ");
     if(!$query) _error();
     return _response($query->fetchAllAssoc());
 
 }
 
-
-function _get_profile_fields(int $pesquisa_id){
+/**
+ * @function:get_profile_fields
+ * @pool:pesquisas_basico
+ */
+function get_profile_fields(int $pesquisa_id){
     
+    _is_pesquisa_cliente($pesquisa_id);
+
+    $query = _query("SELECT field, type FROM pesquisa_profile_fields WHERE pesquisa_id = $pesquisa_id");
+    if(!$query) _error();
+    return _response($query->fetchAllAssoc());
+
 }
 
 /**
  * @function:get_perguntas
- * @pool: pesquisas_basico
+ * @pool:pesquisas_basico
  */
 function get_perguntas(int $pesquisa_id, $not_keys = true){
     // tabela user_resposta_cad_field
@@ -235,7 +257,7 @@ function criar_pesquisa($titulo, array $profile_inputs = []){
 }
 
 /**
- * @function: criar_cadastro_pesquisa
+ * @function:criar_cadastro_pesquisa
  * @pool:pesquisas_full
  */
 function criar_cadastro_pesquisa(int $pesquisa_id, array $inputs){
@@ -262,7 +284,7 @@ function criar_cadastro_pesquisa(int $pesquisa_id, array $inputs){
 
 
 /**
- * @function: criar_pergunta
+ * @function:criar_pergunta
  * @pool:pesquisas_full
  */
 function criar_pergunta(int $pesquisa_id, $pergunta, $type, array $options, bool $required = true){
