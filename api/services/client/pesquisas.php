@@ -4,6 +4,20 @@
  * @service: pesquisas
  */
 
+
+function _get_options_field($field){
+    switch ($field) {
+        case 'genero':
+            return ['masculino', 'feminino', 'transgênero', 'neutro', 'não-binário', 'cisgênero'];
+        case 'sexo':
+            return ['M', 'F'];
+        case 'cor':
+            return ['branca', 'preta', 'parda', 'indígena', 'amarela'];
+        case 'escolaridade':
+            return ['sem instrução', 'fundamental', 'medio', 'tecnico', 'superior'];
+    }
+}
+
 function _prefix_table($slug){
     switch ($slug) {
         case 'data'  : return 'user_resposta.data_resposta';
@@ -59,23 +73,23 @@ function estatistica_votos(int $pesquisa_id, array $filters = []){
 
     _is_pesquisa_cliente($pesquisa_id);
 
-    /**
-     * 
-     * se existir 'equals' ele será usado. 
-     * Se não existir ou 'equals' for 'false', 
-     * o algoritmo irá procura pelo 'range'.
-     * Se ambos não existirem, retorna erro.
-     * 
-     * Exemplo:
-     *  {
-     *     field:'name',
-     *     equals:'value',
-     *     range:{               
-     *         min:'value',
-     *         max:'value'
-     *     }
-     *  }
-     */
+    /*
+      
+      se existir 'equals' ele será usado. 
+      Se não existir ou 'equals' for 'false', 
+      o algoritmo irá procura pelo 'range'.
+      Se ambos não existirem, retorna erro.
+      
+      Exemplo:
+       {
+          field:'name',
+          equals:'value',
+          range:{               
+              min:'value',
+              max:'value'
+          }
+       }
+    */
 
     $filterStr = "";
 
@@ -197,7 +211,7 @@ function estatistica_votos(int $pesquisa_id, array $filters = []){
 
 /**
  * @function:list_pesquisas
- * @pool:pesquisas_basico
+ * @pool:pesquisas_basico,pesquisas_full
  */
 function list_pesquisas(){
 
@@ -220,7 +234,11 @@ function list_pesquisas(){
         WHERE pesquisa.ativo = 1;
     ");
     if(!$query) _error();
-    return _response($query->fetchAllAssoc());
+    
+    return _response([
+        "is_editor"       => in_array('pesquisas_full', array_column($user->getPermissions(), 'slug')),
+        "lista_pesquisas" => $query->fetchAllAssoc()
+    ]);
     
 }
 
@@ -234,8 +252,8 @@ function get_new_user_resposta(int $pesquisa_id){
     _is_pesquisa_cliente($pesquisa_id);
 
     if(!($user_resposta_id = _exec(
-        "INSERT INTO user_resposta (pesquisa_id) 
-         VALUES ($pesquisa_id)", true)))
+        "INSERT INTO user_resposta (pesquisa_id, data_resposta) 
+         VALUES ($pesquisa_id, now())", true)))
         _error(500, 'server error');
     
     return _response(["user_resposta_id" => $user_resposta_id]);
@@ -288,6 +306,8 @@ function salvar_resposta(
     
     if(!_exec("UPDATE user_resposta SET response = 1 WHERE id = $user_resposta_id"))
         _error(500, 'server error');
+
+    return _response([], "Resposta do questionário foi armazenada com sucesso!");
 
 }
 
@@ -355,7 +375,13 @@ function get_profile_fields(int $pesquisa_id){
 
     $query = _query("SELECT field, type FROM pesquisa_profile_fields WHERE pesquisa_id = $pesquisa_id");
     if(!$query) _error();
-    return _response($query->fetchAllAssoc());
+
+    $profileFields = $query->fetchAllAssoc();
+    foreach ($profileFields as $key => $profile)
+        if($profile['type'] == "string")
+            $profileFields[$key]['options'] = _get_options_field($profile['field']);
+   
+    return _response($profileFields);
 
 }
 
@@ -386,12 +412,6 @@ function get_perguntas(int $pesquisa_id, $not_keys = true){
     ");
     if(!$query1) _error();
    
-    $query2 = _query("SELECT field, type FROM pesquisa_profile_fields WHERE pesquisa_id = $pesquisa_id");
-    if(!$query2) _error();
-    
-    $final = [];
-    $final['profile_inputs'] = $query2->fetchAllAssoc();
-
     $options   = $query1->fetchAllAssoc();
     $perguntas = [];
    
@@ -411,9 +431,8 @@ function get_perguntas(int $pesquisa_id, $not_keys = true){
         ];
     }
 
-    $final['perguntas'] = array_values($perguntas);
 
-    return _response($final);
+    return _response(array_values($perguntas));
 
 }
 
