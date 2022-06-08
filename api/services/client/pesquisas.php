@@ -65,6 +65,60 @@ function estatistica_perfil(int $pesquisa_id, string $field){
 
 }
 
+
+/**
+ * @function: editar_titulo
+ * @pool: pesquisas_full
+ */
+function editar_titulo(int $pesquisa_id, $titulo){
+
+    _is_pesquisa_cliente($pesquisa_id);
+
+    if(!_exec("UPDATE pesquisa SET titulo = '$titulo' WHERE id = $pesquisa_id")) 
+        _error();
+
+    return _response([], 'Título editado com sucesso!');
+}
+
+
+/**
+ * @function: excluir_pesquisa
+ * @pool: pesquisas_full
+ */
+function excluir_pesquisa(int $pesquisa_id){
+    
+    _is_pesquisa_cliente($pesquisa_id);
+
+    if(!_exec("UPDATE pesquisa SET ativo = 0 WHERE id = $pesquisa_id")) 
+        _error();
+}
+
+
+/**
+ * @function: publicar_pesquisa
+ * @pool: pesquisas_full
+ */
+function publicar_pesquisa(int $pesquisa_id){
+    
+    _is_pesquisa_cliente($pesquisa_id);
+
+    if(!_exec("UPDATE pesquisa SET ativo = 1 WHERE id = $pesquisa_id")) 
+        _error();
+}
+
+
+/**
+ * @function: finalizar_pesquisa
+ * @pool: pesquisas_full
+ */
+function finalizar_pesquisa(int $pesquisa_id){
+    
+    _is_pesquisa_cliente($pesquisa_id);
+
+    if(!_exec("UPDATE pesquisa SET ativo = 2 WHERE id = $pesquisa_id")) 
+        _error();
+}
+
 /**
  * @function: estatistica_votos
  * @pool: pesquisas_full
@@ -95,35 +149,25 @@ function estatistica_votos(int $pesquisa_id, array $filters = []){
 
     foreach ($filters as $filter) {
         
-        $filterStr .= " AND ";
         $prefix = _prefix_table($filter['field']);
 
         if(isset($filter['equals'])){
-            $filterStr .= $prefix." = ". _fix_value($filter['equals']);
+            $filterStr .= " AND ".$prefix." = ". _fix_value($filter['equals']);
             continue;
         }
 
-        if(isset($filter['min'])){
-            $filterStr .= $prefix." >= ". _fix_value($filter['min']);
+        if(!isset($filter['range']['min']) || !isset($filter['range']['max'])) {
             continue;
         }
 
-        if(isset($filter['max'])){
-            $filterStr .= $prefix." <= ". _fix_value($filter['max']);
-            continue;
-        }
-       
-        if(isset($filter['range'])){
-            if(!isset($filter['range']['min']) || !isset($filter['range']['min'])) 
-                _error();
-            $filterStr .= 
-                "$prefix >= ". _fix_value($filter['range']['min']).
-                " AND ".
-                "$prefix <= ". _fix_value($filter['range']['max']);
-            continue;
-        }
+        $max = (int)$filter['range']['max'];
+        $min = (int)$filter['range']['min'];
 
-        _error();
+        $max = $min > $max ? false : $max; 
+
+        if($min) $filterStr .= " AND ".$prefix." >= ". _fix_value($min);
+        if($max) $filterStr .= " AND ".$prefix." <= ". _fix_value($max);
+        
     }
 
     $query = 
@@ -133,6 +177,7 @@ function estatistica_votos(int $pesquisa_id, array $filters = []){
                 FROM user_resposta 
                 LEFT JOIN user_resposta_profile ON user_resposta_profile.user_resposta_id = user_resposta.id
                 WHERE user_resposta.pesquisa_id = $pesquisa_id
+                AND user_resposta.response = 1
                 $filterStr
             ) as total_pessoas,
             count(*) as votos_option, 
@@ -148,6 +193,7 @@ function estatistica_votos(int $pesquisa_id, array $filters = []){
                  JOIN user_resposta ON user_resposta.id = resposta.user_resposta_id
             LEFT JOIN user_resposta_profile ON user_resposta_profile.user_resposta_id = user_resposta.id
             WHERE user_resposta.pesquisa_id = $pesquisa_id
+            AND user_resposta.response = 1
             $filterStr
         ) as respostas 
         GROUP BY respostas.option_id 
@@ -179,6 +225,8 @@ function estatistica_votos(int $pesquisa_id, array $filters = []){
         "criado_em"     => date('d/m/Y', strtotime($perguntas[0]['criado_em'])),
         "perguntas"     => []
     ];
+
+    $pergs = [];
 
     foreach ($perguntas as $pergunta) {
         if(!isset($response['perguntas']["".$pergunta['pergunta_id']])){
@@ -223,6 +271,7 @@ function list_pesquisas(){
             pesquisa.id,
             pesquisa.titulo,
             pesquisa.createdAt,
+            pesquisa.ativo,
             (
                 SELECT count(id) 
                 FROM user_resposta 
