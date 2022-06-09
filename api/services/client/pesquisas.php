@@ -35,29 +35,99 @@ function _fix_value($value){
     return $value;
 }
 
+
+function _gen_filter(array $filters, array $not = []){
+
+    /*
+      
+      se existir 'equals' ele será usado. 
+      Se não existir ou 'equals' for 'false', 
+      o algoritmo irá procura pelo 'range'.
+      Se ambos não existirem, retorna erro.
+      
+      Exemplo:
+       {
+          field:'name',
+          equals:'value',
+          range:{               
+              min:'value',
+              max:'value'
+          }
+       }
+    */
+
+    $filterStr = "";
+
+    foreach ($filters as $filter) {
+        
+        if(in_array($filter['field'], $not)) continue;
+
+        $prefix = _prefix_table($filter['field']);
+
+        if(isset($filter['equals'])){
+            $filterStr .= " AND ".$prefix." = ". _fix_value($filter['equals']);
+            continue;
+        }
+
+        if(!isset($filter['range']['min']) || !isset($filter['range']['max'])) {
+            continue;
+        }
+
+        if($filter['field'] != "data"){
+            $max = (int)$filter['range']['max'];
+            $min = (int)$filter['range']['min'];
+            $max = $min > $max ? false : $max; 
+        } else {
+            $max = (string)$filter['range']['max'];
+            $min = (string)$filter['range']['min'];
+            $max = $max != "" ? 
+                date('Y-m-d', 
+                    DateTime::createFromFormat('d/m/Y', $max)->getTimestamp()
+                )." 23:59:59" : false;
+            $min = $min != "" ?
+                date('Y-m-d', 
+                    DateTime::createFromFormat('d/m/Y', $min)->getTimestamp()
+                )." 00:00:00" : false;
+        }
+        
+        if($min) $filterStr .= " AND ".$prefix." >= ". _fix_value($min);
+        if($max) $filterStr .= " AND ".$prefix." <= ". _fix_value($max);
+        
+    }
+
+    return $filterStr;
+}
+
 /**
  * @function: estatistica_perfil
  * @pool: pesquisas_full
  */
-function estatistica_perfil(int $pesquisa_id, string $field){
+function estatistica_perfil(int $pesquisa_id, array $fields, array $filters, array $range = []){
 
     _is_pesquisa_cliente($pesquisa_id);
 
-    try {
-        $query = _query(
-        "SELECT 
-            user_r.$field,
-            count(user_r.id) as total_$field
-            FROM (
-                SELECT user_resposta_profile.id, user_resposta_profile.$field
-                  FROM user_resposta_profile
-                  JOIN user_resposta ON user_resposta.id = user_resposta_profile.user_resposta_id
-                 WHERE user_resposta.pesquisa_id = $pesquisa_id 
-               AND NOT user_resposta_profile.$field = null
-            ) as user_r
-        GROUP BY user_r.$field;");
+    $filterStr = _gen_filter($filters);
 
-        return _response($query->fetchAllAssoc());
+    try {
+        
+        $response = [];
+        foreach ($fields as $field) {
+            $query = _query(
+                "SELECT 
+                    user_r.$field as label,
+                    count(user_r.id) as total
+                    FROM (
+                        SELECT user_resposta_profile.id, user_resposta_profile.$field
+                          FROM user_resposta_profile
+                          JOIN user_resposta ON user_resposta.id = user_resposta_profile.user_resposta_id
+                         WHERE user_resposta.pesquisa_id = $pesquisa_id 
+                           AND user_resposta.response = 1
+                         $filterStr
+                    ) as user_r
+                GROUP BY user_r.$field;");
+            $response[$field] = $query->fetchAllAssoc();
+        }
+        return _response($response);
 
     } catch (\Exception $e){
         _error();
@@ -127,48 +197,7 @@ function estatistica_votos(int $pesquisa_id, array $filters = []){
 
     _is_pesquisa_cliente($pesquisa_id);
 
-    /*
-      
-      se existir 'equals' ele será usado. 
-      Se não existir ou 'equals' for 'false', 
-      o algoritmo irá procura pelo 'range'.
-      Se ambos não existirem, retorna erro.
-      
-      Exemplo:
-       {
-          field:'name',
-          equals:'value',
-          range:{               
-              min:'value',
-              max:'value'
-          }
-       }
-    */
-
-    $filterStr = "";
-
-    foreach ($filters as $filter) {
-        
-        $prefix = _prefix_table($filter['field']);
-
-        if(isset($filter['equals'])){
-            $filterStr .= " AND ".$prefix." = ". _fix_value($filter['equals']);
-            continue;
-        }
-
-        if(!isset($filter['range']['min']) || !isset($filter['range']['max'])) {
-            continue;
-        }
-
-        $max = (int)$filter['range']['max'];
-        $min = (int)$filter['range']['min'];
-
-        $max = $min > $max ? false : $max; 
-
-        if($min) $filterStr .= " AND ".$prefix." >= ". _fix_value($min);
-        if($max) $filterStr .= " AND ".$prefix." <= ". _fix_value($max);
-        
-    }
+    $filterStr = _gen_filter($filters);
 
     $query = 
         "SELECT 
