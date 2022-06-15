@@ -116,12 +116,12 @@ function load_me(){
 
         $pages = _query(
             "SELECT
-                view_page.slug    as page_slug,
-                view_page.nome    as page_nome,
-                view_page.icon    as page_icon,
-                view_subpage.nome as subpage_nome,
-                view_subpage.slug as subpage_slug,
-                view_subpage.icon as subpage_icon
+                view_page.slug       as page_slug,
+                view_page.nome       as page_nome,
+                view_page.icon       as page_icon,
+                view_subpage.nome    as subpage_nome,
+                view_subpage.slug    as subpage_slug,
+                view_subpage.icon    as subpage_icon
             FROM view_subpage 
                 JOIN view_page       ON view_page.id = view_subpage.view_page_id 
                 JOIN permission_pool ON permission_pool.id = view_subpage.permission_pool_id
@@ -130,8 +130,9 @@ function load_me(){
             WHERE 
                 user.id = $id 
             ORDER BY 
-                view_page.main DESC, 
-                view_subpage.main DESC;
+                view_page.main    DESC, 
+                view_subpage.main DESC,
+                view_subpage.id   DESC;
         ")->fetchAllAssoc();
 
         $pagesArray = [];

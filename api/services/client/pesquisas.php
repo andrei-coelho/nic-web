@@ -23,7 +23,7 @@ function _prefix_table($slug){
         case 'data'  : return 'user_resposta.data_resposta';
         default: 
             return 
-            in_array($slug, ['idade', 'casado', 'sexo', 'filhos', 'genero', 'cor', 'renda_mensal']) ?
+            in_array($slug, ['idade', 'casado', 'sexo', 'filhos', 'genero', 'cor', 'salario']) ?
             "user_resposta_profile.$slug" : 
             "";
     }
@@ -33,6 +33,27 @@ function _fix_value($value){
     if(is_string($value)) return "'$value'";
     if(is_bool($value)) return $value ? 1 : 0;
     return $value;
+}
+
+function _group_values($key, $values){
+    if($key == 'idade'){
+        $res = [];
+        foreach ($values as $value) {
+            $step = 5;
+            $next = 18;
+            while ($value['label'] > $next) $next += $step; 
+            $res[$next] = isset($res[$next]) ? $res[$next] + $value['total'] : $value['total'];
+        }
+        $resp = [];
+        foreach ($res as $key => $val) {
+            $resp[] = [
+                'label' => $key,
+                'total' => $val
+            ];
+        }
+        return $resp;
+    }
+    return $values;
 }
 
 
@@ -125,7 +146,7 @@ function estatistica_perfil(int $pesquisa_id, array $fields, array $filters, arr
                          $filterStr
                     ) as user_r
                 GROUP BY user_r.$field;");
-            $response[$field] = $query->fetchAllAssoc();
+            $response[$field] = _group_values($field, $query->fetchAllAssoc());
         }
         return _response($response);
 
@@ -290,31 +311,36 @@ function estatistica_votos(int $pesquisa_id, array $filters = []){
  * @function:list_pesquisas
  * @pool:pesquisas_basico,pesquisas_full
  */
-function list_pesquisas(){
+function list_pesquisas(bool $todas = true){
 
     $user      = _user();
     $client_id = $user->getClientArray()['client_id'];
 
-    $query = _query(
-        "SELECT
-            pesquisa.id,
-            pesquisa.titulo,
-            pesquisa.createdAt,
-            pesquisa.ativo,
-            (
-                SELECT count(id) 
-                FROM user_resposta 
-                WHERE 
-                user_resposta.pesquisa_id = pesquisa.id
-                AND response = 1
-            ) as respostas_total
-        FROM pesquisa 
-        WHERE pesquisa.ativo = 1;
-    ");
+    $editor    = in_array('pesquisas_full', array_column($user->getPermissions(), 'slug'));
+
+    $queryStr  = "SELECT
+        pesquisa.id,
+        pesquisa.titulo,
+        pesquisa.createdAt,
+        pesquisa.ativo,
+        (
+            SELECT count(id) 
+            FROM user_resposta 
+            WHERE 
+            user_resposta.pesquisa_id = pesquisa.id
+            AND response = 1
+        ) as respostas_total
+    FROM pesquisa 
+    WHERE 
+    pesquisa.client_id = $client_id ";
+
+    $queryStr  .= "AND ".($todas && $editor ?  "pesquisa.ativo > 0" : "pesquisa.ativo = 1");
+        
+    $query = _query($queryStr);
     if(!$query) _error();
     
     return _response([
-        "is_editor"       => in_array('pesquisas_full', array_column($user->getPermissions(), 'slug')),
+        "is_editor"       => $editor,
         "lista_pesquisas" => $query->fetchAllAssoc()
     ]);
     
@@ -519,7 +545,7 @@ function get_perguntas(int $pesquisa_id, $not_keys = true){
  * @function:criar_pesquisa
  * @pool:pesquisas_full
  */
-function criar_pesquisa($titulo, array $profile_inputs = []){
+function criar_pesquisa($titulo, array $perguntas, array $profile_inputs = []){
 
     $user      = _user();
     $client_id = $user->getClientArray()['client_id'];
@@ -529,6 +555,10 @@ function criar_pesquisa($titulo, array $profile_inputs = []){
         pesquisa (client_id, created_by, titulo, createdAt, ativo) 
         VALUES   ($client_id, $user_id, '$titulo', now(), 0)
     ", true))) _error(500, 'server error');
+
+    foreach ($perguntas as $pergunta) {
+        criar_pergunta($id, $pergunta['title'], $pergunta['type'], $pergunta['options']);
+    }
 
     if(count($profile_inputs) > 0){
 
@@ -540,7 +570,30 @@ function criar_pesquisa($titulo, array $profile_inputs = []){
         if(!(_exec($insert))) _error();
     }
 
+    if(!_exec("UPDATE pesquisa SET ativo = 1 WHERE id = $id")) 
+        _error();
+
     return _response(['pesquisa_id' => $id]);
+
+}
+
+/**
+ * @function:criar_pergunta
+ * @pool:pesquisas_full
+ */
+function criar_pergunta(int $pesquisa_id, $pergunta, $type, array $options, bool $required = true){
+
+    // _is_pesquisa_cliente($pesquisa_id);
+    // types 'radio', 'check', 'order'
+    if(!in_array($type, ['radio', 'check'])) _error();
+
+    $req = $required ? 1 : 0;
+
+    if(!($pergunta_id = _exec("INSERT INTO pergunta (pesquisa_id, valor, `type`, `required`)
+        VALUES ($pesquisa_id, '$pergunta', '$type', $req)", true))) 
+        _error(500, 'server error');
+
+    _inserir_options($pergunta_id, array_column($options, 'label'));
 
 }
 
@@ -567,27 +620,6 @@ function criar_cadastro_pesquisa(int $pesquisa_id, array $inputs){
 
     $insert = substr($insert, 0 , -1);
     if(!_exec($insert)) _error(500, 'server error');
-
-}
-
-
-/**
- * @function:criar_pergunta
- * @pool:pesquisas_full
- */
-function criar_pergunta(int $pesquisa_id, $pergunta, $type, array $options, bool $required = true){
-
-    _is_pesquisa_cliente($pesquisa_id);
-    // types 'radio', 'check', 'order'
-    if(!in_array($type, ['radio', 'check', 'order'])) _error();
-
-    $req = $required ? 1 : 0;
-
-    if(!($pergunta_id = _exec("INSERT INTO pergunta (pesquisa_id, valor, `type`, `required`)
-        VALUES ($pesquisa_id, '$pergunta', '$type', $req)", true))) 
-        _error(500, 'server error');
-
-    _inserir_options($pergunta_id, $options);
 
 }
 
