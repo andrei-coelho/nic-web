@@ -1,5 +1,7 @@
 <?php 
 
+error_reporting(0);
+
 include "../api/helpers/request.php";
 include "../api/autoload.php";
 include "../api/helpers/config.php";

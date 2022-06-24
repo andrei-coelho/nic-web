@@ -96,7 +96,7 @@ function load_me(){
     sleep(1);
 
     $user = _user();
-    if(!$user) _error();
+    if(!$user) _error(401, 'Não é um usuário');
 
     $response = [];
 

@@ -2,8 +2,12 @@
 
 use libs\app\Config as config;
 
+function _is_installed(){
+    return config::get("installed");
+}
+
 function _is_in_production(){
-    return config::get("type") == 'production';
+    return config::get("type") == 'prod';
 }
 
 function _url(){

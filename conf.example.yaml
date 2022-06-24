@@ -5,3 +5,4 @@ type: dev
 prod_url: 
 dev_url: http://localhost:3000/
 salt: my_salt
+installed: false

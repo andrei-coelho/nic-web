@@ -6,3 +6,4 @@ conf.yaml
 database.prod.yaml
 database.dev.yaml
 credentials.json
+admin.txt

@@ -500,21 +500,21 @@ function get_perguntas(int $pesquisa_id, $not_keys = true){
 
     $query1 = _query(
         "SELECT
-                 options.valor  as option,
-                 options.id     as option_id,
-                 pergunta.valor as pergunta,
-                 pergunta.id    as pergunta_id,
-                 pergunta.type  as type
+                options.valor  as `option`,
+                options.id     as option_id,
+                pergunta.valor as pergunta,
+                pergunta.id    as pergunta_id,
+                pergunta.type  as `type`
             FROM options
             JOIN pergunta ON options.pergunta_id = pergunta.id
             JOIN pesquisa ON pesquisa.id = pergunta.pesquisa_id 
         WHERE
-            pesquisa.id = $pesquisa_id 
+            pesquisa.id = 9
         ORDER BY 
             pergunta.id, options.id
         ASC
     ");
-    if(!$query1) _error();
+    if(!$query1) _error(500, 'erro ao tentar recuperar as perguntas');
    
     $options   = $query1->fetchAllAssoc();
     $perguntas = [];

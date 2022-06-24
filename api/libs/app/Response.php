@@ -36,7 +36,7 @@ class Response {
 
         if($this->session) $resp["session"] = $this->session;
 
-        return json_encode($resp,  
+        return \json_encode($resp,  
             JSON_PRESERVE_ZERO_FRACTION  | 
             JSON_PARTIAL_OUTPUT_ON_ERROR |
             JSON_UNESCAPED_UNICODE); 
