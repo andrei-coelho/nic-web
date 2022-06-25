@@ -509,7 +509,7 @@ function get_perguntas(int $pesquisa_id, $not_keys = true){
             JOIN pergunta ON options.pergunta_id = pergunta.id
             JOIN pesquisa ON pesquisa.id = pergunta.pesquisa_id 
         WHERE
-            pesquisa.id = 9
+            pesquisa.id = $pesquisa_id
         ORDER BY 
             pergunta.id, options.id
         ASC

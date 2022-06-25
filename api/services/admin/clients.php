@@ -97,16 +97,32 @@ function open_ghost_session(int $client_id){
     if(!_exec("INSERT 
         INTO session (user_id, hash, expire, ativo) 
         VALUES($id_ghost, '$sess', '$expire', 1)")) 
-    _error(500, 'Server problem');
+    _error(500, 'Server problem 1');
 
     $query = _query("SELECT id FROM user_client WHERE user_id = $id_ghost");
     if($query->rowCount() == 0){
-        _exec(
-            "INSERT INTO user_client(user_id, client_id, master, ghost)
-            VALUES ($id_ghost, $client_id, 1, 1) ");
+        try {
+            _exec(
+                "INSERT INTO user_client(user_id, client_id, master, ghost)
+                VALUES ($id_ghost, $client_id, 1, 1) ");
+            
+            $allPermissions = _query("SELECT id FROM permission_pool")->fetchAllAssoc();
+            $insertPermissions = "INSERT INTO user_permission (permission_pool_id, user_id) VALUES ";
+            
+            foreach ($allPermissions as $permission)
+                $insertPermissions .= "(".$permission['id'].", $id_ghost),";
+            
+            $insertPermissions = substr($insertPermissions, 0, -1).";";
+            _exec($insertPermissions);
+
+        } catch(\Exception $e){
+            _error(500, 'Server problem 2');
+        }
     } else {
         $user_client_id = $query->fetchAssoc()['id'];
-        _exec("UPDATE user_client SET client_id = $client_id WHERE id = $user_client_id");
+        if(!_exec("UPDATE user_client SET client_id = $client_id WHERE id = $user_client_id")){
+            _error(500, 'Server problem 3');
+        }
     }
 
     return _response(["session"=>$sess]);
