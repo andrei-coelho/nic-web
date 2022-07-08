@@ -41,7 +41,7 @@ function __upload_save($user, $name, $mime, $file, $client_path, $dirId){
 
         __save_tags($name." ".$mime, $idInsert);
         if(!__save_info($idInsert, $user, $size))
-            _error(500, 'Server Error - Não foi possível salvar as informações do arquivo');
+            _error(500, 'Server Error - Não foi possível salvar as informações do arquivo - 1');
 
         return _response([
             'type'   => 'file',
@@ -82,6 +82,7 @@ function __upload_create($user, $client_path, $name, $mime, $dirId){
 }
 
 function __upload_append($client_path, $file, $data){
+    sleep(1);
     return file::append($client_path, $file, $data);
 }
 
@@ -117,7 +118,7 @@ function __upload_commit($user, $hashId, $mime, $client_path){
     $file = $query->fetchAssoc();
 
     if(!__save_info($file['id'], $user, $obj->size()))
-        _error(500, 'Server Error - Não foi possível salvar as informações do arquivo');
+        _error(500, 'Server Error - Não foi possível salvar as informações do arquivo 2');
 
     $file['thumb']   = _get_thumb($user->session(), $mime,  $client_path, $hashId);
     $file['novo']    = true;
@@ -179,15 +180,9 @@ function __save_tags($name, $hashFileOrId){
 }
 
 
-function __save_info($hashFileOrId, $user, $size){
+function __save_info($fileId, $user, $size){
 
-    if(!is_numeric($hashFileOrId)){
-        $query = _query("SELECT id FROM file_client WHERE hash_file = '$hashFileOrId'");
-        if($query->rowCount()==0) return false;
-        $fileId = $query->fetchAssoc()['id'];
-    } else {
-        $fileId = $hashFileOrId;
-    }
+    $fileId = (int)$fileId;
 
     return _exec(
         "INSERT INTO 

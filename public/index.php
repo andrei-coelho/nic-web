@@ -1,14 +1,17 @@
 <?php 
 
-//error_reporting(0);
-
 include "../api/helpers/request.php";
 include "../api/autoload.php";
 include "../api/helpers/config.php";
 
+if(_is_in_production()) error_reporting(0);
+
 $request = _request(['req']);
 $req = $request->vars['req'] ? $request->vars['req'] : "home";
 $dev_modules = ['devtool', 'test'];
+
+if($req == 'admin') 
+    header("Location: "._url()."public/manager");
 
 if(!_is_in_production() && in_array($req, $dev_modules)
     && file_exists(($file = "../src/".$req.".php"))) 
