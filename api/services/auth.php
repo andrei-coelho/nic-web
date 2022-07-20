@@ -12,7 +12,7 @@
  * @function:logar
  * @pool:public
  */
-function logar($email, $senha){
+function logar($email, $senha, $device){
 
     sleep(1);
 
@@ -47,6 +47,11 @@ function logar($email, $senha){
         INTO session (user_id, hash, expire, ativo) 
         VALUES($user_id, '$sess', '$expire', 1)")) 
     _error(500, 'Server problem');
+
+    if($device != ""){
+        include "notification.php";
+        _save_device($user_id, $device);
+    }
 
     return _response([], '', $sess);
    
@@ -203,4 +208,4 @@ function get_me(){
     if(!_exec("UPDATE user SET nome = '$nome', senha = '$passEnc' WHERE id = $id"))
          _error(500, 'server error');
 
- }
+}

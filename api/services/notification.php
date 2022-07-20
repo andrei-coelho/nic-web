@@ -56,3 +56,58 @@ function get_list(){
     return _response($res);
 }
 
+/**
+ * @function:save_device
+ * @pool:public
+ */
+function save_device($device){
+
+    $user = _get_user();
+    $id = $user->id();
+    _save_device($id, $device);
+
+}
+
+function _save_device($id, $device){
+
+    if(!change_user_device($id, $device)){
+        try {
+            _exec("INSERT INTO devices (user_id, device_key) VALUES ($id, '$device')");    
+        } catch (\Exception $th1) {
+            desativar_device($device);
+        }
+    }
+
+}
+
+function change_user_device($id, $device){
+
+    $getDevice = _query("SELECT user_id, ativo FROM devices WHERE device_key = '$device'");
+
+    if($getDevice->rowCount() > 0){
+        
+        $deviceS = $getDevice->fetchAssoc();
+
+        $sets = "";
+        if($deviceS['ativo'] == 0)
+            $sets .= " ativo = 1,";
+        $sets = " user_id = $id ";
+        
+        if(!_exec("UPDATE devices SET $sets WHERE device_key = '$device'")) 
+            return false;
+
+        return true;
+    }
+
+    return false;
+
+}
+
+function desativar_device($device){
+    try {
+        _exec("UPDATE devices SET ativo = 0 WHERE device_key = '$device'"); 
+    } catch (\Exception $th2) {
+        return false;
+    }
+    return true;
+}
