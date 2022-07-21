@@ -21,3 +21,7 @@ function _salt(){
 function _refresh_token(){
     return !_is_in_production() ? config::get("refresh_tk") : "";
 }
+
+function _fmc_key(){
+    return config::get("fmc_key");
+}

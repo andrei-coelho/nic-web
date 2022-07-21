@@ -6,3 +6,6 @@ prod_url:
 dev_url: http://localhost:3000/
 salt: my_salt
 installed: false
+tk_dropbox: # dropbox
+refresh_tk: # dropbox
+fmc_key: # FMC firebase cloud messages
