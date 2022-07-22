@@ -118,13 +118,18 @@ function __upload_commit($user, $hashId, $mime, $client_path){
     $file = $query->fetchAssoc();
 
     if(!__save_info($file['id'], $user, $obj->size()))
-        _error(500, 'Server Error - Não foi possível salvar as informações do arquivo 2');
+        _error(500, 'Server Error - Não foi possível salvar as informações do arquivo (2)');
 
     $file['thumb']   = _get_thumb($user->session(), $mime,  $client_path, $hashId);
     $file['novo']    = true;
     $file['options'] = true;
     $file['publico'] = false;
     $file['size']    = $obj->size();
+
+    _notify("arquivo_criado", [
+        "@user_sender" => $user->slug(),
+        "@nome_arquivo" => $file['nome'].".".$mime
+    ]);
 
     return _response($file);
 }

@@ -41,6 +41,10 @@ abstract class User {
         ->fetchAllAssoc();
     }
 
+    public function slug(){
+        return $this->slug;
+    }
+
     public function isValidSession(){
         return $this->valid;
     }
@@ -57,7 +61,4 @@ abstract class User {
         return $this->id;
     }
 
-    public function slug(){
-        return $this->slug;
-    }
 }

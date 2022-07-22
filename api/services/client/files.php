@@ -475,6 +475,12 @@ function add_folder($name, $hash_dir = "", $client_id = 0){
                 VALUES ($dirId, '$name', '$hash', $client_id)"))
         _error(500, "Server Error");
     
+
+    _notify("pasta_criada", [
+        "@user_sender" => $user->slug(),
+        "@nome_pasta" => $name
+    ]);
+
     return _response([
         'hashId' => $hash,
         'nome'   => $name,

@@ -68,3 +68,18 @@ function test($name, $mime, $file, $hash_dir = "", $client_id = false){
   }
 
 }
+
+/**
+* @function:notification_test
+* @pool:public
+*/
+function notification_test(){
+
+  $user = _user();
+
+  _notify("arquivo_criado", [
+    "@user_sender" => $user->slug(),
+    "@nome_arquivo" => "arquivo_nome"."."."jpg"
+  ]);
+
+}
